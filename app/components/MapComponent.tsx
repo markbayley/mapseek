@@ -329,8 +329,9 @@ export default function Map({}: MapComponentProps) {
           .setLngLat(e.lngLat)
           .setHTML(
             `
-                    <div class="bg-white shadow-lg rounded-lg p-4 max-w-xs border-l-4 border-blue-500 animate-fade-in transition duration-300 ease-in-out">
-                        <h3 class="text-lg font-semibold text-gray-800 mb-2">${NAME} (${FIPS_10}) ${SUBREGION}</h3>
+                    <div class="bg-white shadow-lg rounded-lg p-4 max-w-xs border-l-4 border-emerald-500 animate-fade-in transition duration-300 ease-in-out">
+                        <h3 class="text-lg font-semibold text-gray-800">${NAME}  </h3>
+                        <p class="text-xs font-semibold text-gray-500 mb-2">${SUBREGION}</p>
                         <p class="text-sm text-gray-600"><strong>GDP:</strong> $${
                           GDP_MD
                             ? (GDP_MD / 1000000).toFixed(2).toLocaleString()
