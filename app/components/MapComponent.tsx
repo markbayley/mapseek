@@ -33,14 +33,14 @@ export default function Map({ }: MapComponentProps) {
         await addDataLayers();
         updateLayerVisibility();
         // Set Fog after map style loads
-        map.current.setFog({
+        map.current?.setFog({
           color: 'rgb(186, 210, 235)', // Lower atmosphere
           'high-color': 'rgb(36, 92, 223)', // Upper atmosphere
           'horizon-blend': 0.001, // Atmosphere thickness
           'space-color': 'rgb(11, 11, 25)', // Background color
           'star-intensity': 0.1, // Background star brightness
         });
-        setupClickEvents(); // ✅ Add country click event
+        setupClickEvents(); // Add country click event
       });
     };
 
@@ -53,7 +53,7 @@ export default function Map({ }: MapComponentProps) {
     };
   }, []);
 
-  // ✅ Function to update the data dynamically when searchTerm changes
+  // Function to update the data dynamically when searchTerm changes
   const updateGeoJSONData = async () => {
     const response = await fetch(
       "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_admin_0_countries.geojson"
@@ -67,7 +67,7 @@ export default function Map({ }: MapComponentProps) {
       ),
     };
 
-    // ✅ Instead of reloading the whole map, just update the source
+    // Instead of reloading the whole map, just update the source
     if (map.current?.getSource("countries")) {
       (map.current.getSource("countries") as mapboxgl.GeoJSONSource).setData(
         filteredData
@@ -77,7 +77,7 @@ export default function Map({ }: MapComponentProps) {
 
   useEffect(() => {
     if (map.current) updateGeoJSONData();
-  }, [searchTerm]); // ✅ Runs only when searchTerm changes
+  }, [searchTerm]); // Runs only when searchTerm changes
 
   const addDataLayers = async () => {
     const response = await fetch(
@@ -164,18 +164,52 @@ export default function Map({ }: MapComponentProps) {
           "fill-opacity": 0.7,
         },
       });
+
+      // Call updateLayerVisibility after the layers are added
+      updateLayerVisibility();
     } else {
       console.error("Map style is not loaded yet");
     }
   };
 
-  // ✅ Click event for displaying country information
+  // Function to update layer visibility
+  const updateLayerVisibility = () => {
+    if (!map.current || !map.current.isStyleLoaded()) return;
+
+    const layers = ["gdp-fill", "population-fill", "gdpcapita-fill"];
+    layers.forEach((layer) => {
+      if (map.current?.getLayer(layer)) {
+        map.current?.setLayoutProperty(layer, "visibility", "none");
+      }
+    });
+
+    switch (gdpFilter) {
+      case 0:
+        if (map.current.getLayer("gdp-fill")) {
+          map.current.setLayoutProperty("gdp-fill", "visibility", "visible");
+        }
+        break;
+      case 1000000000000:
+        if (map.current.getLayer("population-fill")) {
+          map.current.setLayoutProperty("population-fill", "visibility", "visible");
+        }
+        break;
+      case 3000000000000:
+        if (map.current.getLayer("gdpcapita-fill")) {
+          map.current.setLayoutProperty("gdpcapita-fill", "visibility", "visible");
+        }
+        break;
+      default:
+        break;
+    }
+  };
+
   const setupClickEvents = () => {
     if (!map.current) return;
 
     const layers = ["gdp-fill", "population-fill", "gdpcapita-fill"];
     layers.forEach((layer) => {
-      map.current.on("click", layer, (e) => {
+      map.current?.on("click", layer, (e) => {
         if (!map.current || !e.features || e.features.length === 0) return;
 
         const feature = e.features[0] as mapboxgl.MapboxGeoJSONFeature;
@@ -199,13 +233,12 @@ export default function Map({ }: MapComponentProps) {
           .setHTML(
             `
              <div class="bg-white shadow-lg rounded-lg p-4 max-w-xs border-l-4 border-blue-500 animate-fade-in transition duration-1000 ease-in-out">
-
                 <h3 class="text-lg font-semibold text-gray-800 mb-2">${NAME}</h3>
                 <p class="text-sm text-gray-600"><strong>GDP:</strong> $${
-                  GDP_MD ? (GDP_MD/1000000).toFixed(2).toLocaleString() : "N/A"
+                  GDP_MD ? (GDP_MD / 1000000).toFixed(2).toLocaleString() : "N/A"
                 } trillion USD</p>
                 <p class="text-sm text-gray-600"><strong>Population:</strong> ${
-                  POP_EST ? (POP_EST/1000000).toFixed(0).toLocaleString() : "N/A"
+                  POP_EST ? (POP_EST / 1000000).toFixed(0).toLocaleString() : "N/A"
                 } million</p>
                 <p class="text-sm text-gray-600"><strong>GDP Per Capita:</strong> $${
                   GDP_per_capita ? GDP_per_capita.toFixed(2) : "N/A"
@@ -217,56 +250,15 @@ export default function Map({ }: MapComponentProps) {
       });
     });
 
-    // ✅ Change cursor to pointer when hovering over a country
-    map.current.on("mouseenter", "gdp-fill", () => {
-      if (map.current) map.current.getCanvas().style.cursor = "pointer";
+    // Change cursor to pointer when hovering over a country
+    layers.forEach((layer) => {
+      map.current?.on("mouseenter", layer, () => {
+        if (map.current) map.current.getCanvas().style.cursor = "pointer";
+      });
+      map.current?.on("mouseleave", layer, () => {
+        if (map.current) map.current.getCanvas().style.cursor = "";
+      });
     });
-    map.current.on("mouseenter", "population-fill", () => {
-      if (map.current) map.current.getCanvas().style.cursor = "pointer";
-    });
-    map.current.on("mouseenter", "gdpcapita-fill", () => {
-      if (map.current) map.current.getCanvas().style.cursor = "pointer";
-    });
-
-    map.current.on("mouseleave", "gdp-fill", () => {
-      if (map.current) map.current.getCanvas().style.cursor = "";
-    });
-    map.current.on("mouseleave", "population-fill", () => {
-      if (map.current) map.current.getCanvas().style.cursor = "";
-    });
-    map.current.on("mouseleave", "gdpcapita-fill", () => {
-      if (map.current) map.current.getCanvas().style.cursor = "";
-    });
-  };
-
-  const updateLayerVisibility = () => {
-    if (!map.current || !map.current.isStyleLoaded()) return;
-
-    map.current.setLayoutProperty("gdp-fill", "visibility", "none");
-    map.current.setLayoutProperty("population-fill", "visibility", "none");
-    map.current.setLayoutProperty("gdpcapita-fill", "visibility", "none");
-
-    switch (gdpFilter) {
-      case 0:
-        map.current.setLayoutProperty("gdp-fill", "visibility", "visible");
-        break;
-      case 1000000000000:
-        map.current.setLayoutProperty(
-          "population-fill",
-          "visibility",
-          "visible"
-        );
-        break;
-      case 3000000000000:
-        map.current.setLayoutProperty(
-          "gdpcapita-fill",
-          "visibility",
-          "visible"
-        );
-        break;
-      default:
-        break;
-    }
   };
 
   useEffect(() => {
