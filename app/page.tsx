@@ -1,7 +1,8 @@
 'use client';
 
 import Map from './components/MapComponent';
-import { useState } from 'react';
+import MapboxExample from './components/Test';
+//import { useState } from 'react';
 
 export default function Home() {
 
@@ -11,7 +12,7 @@ export default function Home() {
     
      
       <Map searchTerm={''} gdpFilter={0}  />
-    
+    {/* <MapboxExample  /> */}
     </main>
   );
 }

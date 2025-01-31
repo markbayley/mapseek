@@ -61,6 +61,7 @@ export default function Map({}: MapComponentProps) {
         await addDataLayers();
         updateLayerVisibility();
         // Set Fog after map style loads
+
         map.current?.setFog({
           color: "rgb(186, 210, 235)", // Lower atmosphere
           "high-color": "rgb(36, 92, 223)", // Upper atmosphere
@@ -96,8 +97,8 @@ export default function Map({}: MapComponentProps) {
     };
 
     // Update the source data
-    if (map.current?.getSource("countries")) {
-      (map.current.getSource("countries") as mapboxgl.GeoJSONSource).setData(
+    if (map.current?.getSource("data")) {
+      (map.current.getSource("data") as mapboxgl.GeoJSONSource).setData(
         filteredData
       );
     }
@@ -139,15 +140,92 @@ export default function Map({}: MapComponentProps) {
     });
 
     if (map.current && map.current.isStyleLoaded()) {
-      map.current.addSource("countries", {
+      map.current.addSource("data", {
         type: "geojson",
         data: countriesGeoJSON,
+      });
+
+      let hoveredPolygonId = null;
+
+      map.current?.addSource("countries", {
+        type: "vector",
+        url: "mapbox://mapbox.country-boundaries-v1",
+      });
+
+      // The feature-state dependent fill-opacity expression will render the hover effect
+      // when a feature's hover state is set to true.
+      map.current?.addLayer({
+        id: "country-fills",
+        type: "fill",
+        source: "countries",
+        "source-layer": "country_boundaries",
+        layout: {},
+        paint: {
+          //'fill-color': '#627BC1',
+          "fill-opacity": [
+            "case",
+            ["boolean", ["feature-state", "hover"], false],
+            1,
+            0.5,
+          ],
+        },
+      });
+
+      map.current.addLayer({
+        id: "country-borders",
+        type: "line",
+        source: "countries",
+        "source-layer": "country_boundaries",
+        layout: {},
+        paint: {
+          "line-color": "#e0f2f1",
+          "line-width": 1,
+        },
+      });
+
+      map.current.on("mousemove", "country-fills", (e) => {
+        if (e.features.length > 0) {
+          if (hoveredPolygonId !== null) {
+            map.current.setFeatureState(
+              {
+                source: "countries",
+                sourceLayer: "country_boundaries",
+                id: hoveredPolygonId,
+              },
+              { hover: false }
+            );
+          }
+          hoveredPolygonId = e.features[0].id;
+          map.current.setFeatureState(
+            {
+              source: "countries",
+              sourceLayer: "country_boundaries",
+              id: hoveredPolygonId,
+            },
+            { hover: true }
+          );
+        }
+      });
+
+      map.current.on("mouseleave", "country-fills", () => {
+        if (hoveredPolygonId !== null) {
+          map.current.setFeatureState(
+            {
+              source: "countries",
+              sourceLayer: "country_boundaries",
+              id: hoveredPolygonId,
+            },
+            { hover: false }
+          );
+        }
+        hoveredPolygonId = null;
       });
 
       map.current.addLayer({
         id: "gdp-fill",
         type: "fill",
-        source: "countries",
+        source: "data",
+        // 'source-layer': 'country_boundaries',
         paint: {
           "fill-color": [
             "interpolate",
@@ -169,7 +247,8 @@ export default function Map({}: MapComponentProps) {
       map.current.addLayer({
         id: "population-fill",
         type: "fill",
-        source: "countries",
+        source: "data",
+        //'source-layer': 'country_boundaries',
         paint: {
           "fill-color": [
             "interpolate",
@@ -192,7 +271,8 @@ export default function Map({}: MapComponentProps) {
       map.current.addLayer({
         id: "gdpcapita-fill",
         type: "fill",
-        source: "countries",
+        source: "data",
+        // 'source-layer': 'country_boundaries',
         paint: {
           "fill-color": [
             "interpolate",
@@ -288,7 +368,6 @@ export default function Map({}: MapComponentProps) {
   map.current?.on("click", "gdp-fill", () => showLegend("gdp"));
   map.current?.on("click", "population-fill", () => showLegend("population"));
   map.current?.on("click", "gdpcapita-fill", () => showLegend("gdp-capita"));
-  
 
   const setupClickEvents = async () => {
     if (!map.current) return;
@@ -370,35 +449,47 @@ export default function Map({}: MapComponentProps) {
 
         console.log("res", result["Economy"]["Exports - commodities"]["text"]);
 
-        const overview = result["Economy"]["Economic overview"]["text"]
+        const overview = result["Economy"]["Economic overview"]["text"];
         const exports = result["Economy"]["Exports - commodities"]["text"];
         const imports = result["Economy"]["Imports - commodities"]["text"];
         const industries = result["Economy"]["Industries"]["text"];
 
-        const info =       
-        <div className="bg-white shadow-lg rounded-lg p-4 max-w-xs border-l-4 border-emerald-500 animate-fade-in transition duration-300 ease-in-out">
-            <h3 className="text-lg font-semibold text-gray-800">{NAME}  </h3>
-            <p className="text-xs font-semibold text-gray-500 mb-2">{SUBREGION}</p>
-            <p className="text-sm text-gray-600"><strong>Overview:</strong> {overview}</p>
-            <p className="text-sm text-gray-600"><strong>Industries:</strong> {industries}</p>
-            <p className="text-sm text-gray-600"><strong>GDP:</strong> {
-              GDP_MD
-                ? (GDP_MD / 1000000).toFixed(2).toLocaleString()
-                : "N/A"
-            } trillion USD</p>
-            <p className="text-sm text-gray-600"><strong>Population:</strong> {
-              POP_EST
+        const info = (
+          <div className="bg-white shadow-lg rounded-lg p-4 max-w-xs border-l-4 border-emerald-500 animate-fade-in transition duration-300 ease-in-out">
+            <h3 className="text-lg font-semibold text-gray-800">{NAME} </h3>
+            <p className="text-xs font-semibold text-gray-500 mb-2">
+              {SUBREGION}
+            </p>
+            <p className="text-sm text-gray-600">
+              <strong>Overview:</strong> {overview}
+            </p>
+            <p className="text-sm text-gray-600">
+              <strong>Industries:</strong> {industries}
+            </p>
+            <p className="text-sm text-gray-600">
+              <strong>GDP:</strong>{" "}
+              {GDP_MD ? (GDP_MD / 1000000).toFixed(2).toLocaleString() : "N/A"}{" "}
+              trillion USD
+            </p>
+            <p className="text-sm text-gray-600">
+              <strong>Population:</strong>{" "}
+              {POP_EST
                 ? (POP_EST / 1000000).toFixed(0).toLocaleString()
-                : "N/A"
-            } million</p>
-            <p className="text-sm text-gray-600"><strong>GDP Per Capita:</strong> {
-              GDP_per_capita ? GDP_per_capita.toFixed(2) : "N/A"
-            }k</p>
-            <p className="text-sm text-gray-600"><strong>Exports:</strong> {exports}</p>
-             <p className="text-sm text-gray-600"><strong>Imports:</strong> {imports}</p>
-            
-        </div>
-          
+                : "N/A"}{" "}
+              million
+            </p>
+            <p className="text-sm text-gray-600">
+              <strong>GDP Per Capita:</strong>{" "}
+              {GDP_per_capita ? GDP_per_capita.toFixed(2) : "N/A"}k
+            </p>
+            <p className="text-sm text-gray-600">
+              <strong>Exports:</strong> {exports}
+            </p>
+            <p className="text-sm text-gray-600">
+              <strong>Imports:</strong> {imports}
+            </p>
+          </div>
+        );
 
         setSelectedCountry(info);
 
@@ -425,7 +516,7 @@ export default function Map({}: MapComponentProps) {
         //                 }k</p>
         //                 <p class="text-sm text-gray-600"><strong>Exports:</strong> ${exports}</p>
         //                  <p class="text-sm text-gray-600"><strong>Imports:</strong> ${imports}</p>
-                        
+
         //             </div>
         //             `
         //   )
@@ -472,58 +563,64 @@ export default function Map({}: MapComponentProps) {
   return (
     <div className="relative h-screen w-screen">
       {/* Map Container */}
-      <div ref={mapContainer} className="absolute inset-0 h-full w-full" />
+      <div ref={mapContainer} className="absolute inset-0 h-full w-full " />
 
       <div
         id="legend"
-        className="bg-transparent border p-2 rounded absolute bottom-4 right-2 z-10 shadow-md text-xs text-white"
+        className="bg-white  p-2 rounded-lg absolute bottom-4 left-4 z-10 shadow-md text-xs w-80"
       >
         <div id="gdp-legend" className="hidden">
           <h5 className="font-semibold pb-1">GDP</h5>
           <div className="flex items-center gap-x-2">
-            <div className="bg-gray-200 h-5 w-5 inline-block"></div> {"<"}100b{" "}
+            <div className="bg-gray-200 h-5 w-5 inline-block rounded"></div>{" "}
+            {"<"}100b <br />
+            <div className="bg-yellow-200 h-5 w-5 inline-block rounded"></div>{" "}
+            100b+
             <br />
-            <div className="bg-yellow-200 h-5 w-5 inline-block"></div> 100b
+            <div className="bg-orange-400 h-5 w-5 inline-block rounded"></div>{" "}
+            1.0t+
             <br />
-            <div className="bg-orange-400 h-5 w-5 inline-block"></div> 1t
-            <br />
-            <div className="bg-red-600 h-5 w-5 inline-block"></div> 10t+
+            <div className="bg-red-600 h-5 w-5 inline-block rounded"></div> 10t+
           </div>
         </div>
         <div id="population-legend">
           <h5 className="font-semibold pb-1">Population</h5>
           <div className="flex items-center gap-x-2">
-            <div className="bg-teal-100 h-5 w-5 inline-block"></div> {"<"}10m
+            <div className="bg-teal-100 h-5 w-5 inline-block rounded"></div>{" "}
+            {"<"}10m
             <br />
-            <div className="bg-teal-300 h-5 w-5 inline-block"></div> 10m
+            <div className="bg-teal-300 h-5 w-5 inline-block rounded"></div>{" "}
+            10m+
             <br />
-            <div className="bg-teal-600 h-5 w-5 inline-block"></div> 100m
+            <div className="bg-teal-600 h-5 w-5 inline-block rounded"></div>{" "}
+            100m+
             <br />
-            <div className="bg-teal-800 h-5 w-5 inline-block"></div> 1b+
+            <div className="bg-teal-800 h-5 w-5 inline-block rounded"></div> 1b+
           </div>
         </div>
 
         <div id="gdp-capita-legend" className="hidden">
           <h5 className="font-semibold pb-1">GDP Per Capita</h5>
           <div className="flex items-center gap-x-2">
-            <div className="bg-blue-100 h-5 w-5 inline-block"></div> {"<"}2k
+            <div className="bg-blue-100 h-5 w-5 inline-block rounded"></div>{" "}
+            {"<"}2k
             <br />
-            <div className="bg-blue-200 h-5 w-5 inline-block"></div> 2k
+            <div className="bg-blue-200 h-5 w-5 inline-block rounded"></div> 2k+
             <br />
-            <div className="bg-blue-400 h-5 w-5 inline-block"></div> 20k
+            <div className="bg-blue-400 h-5 w-5 inline-block rounded"></div>{" "}
+            20k+
             <br />
-            <div className="bg-blue-600 h-5 w-5 inline-block"></div> 50k+
+            <div className="bg-blue-600 h-5 w-5 inline-block rounded"></div>{" "}
+            50k+
           </div>
         </div>
       </div>
 
       <div
         id="info"
-        className="bg-transparent  rounded absolute top-4 right-2 z-10 shadow-md text-xs text-white max-w-xs"
+        className="bg-transparent  rounded absolute top-16 left-4 z-10 shadow-md text-xs text-white max-w-xs"
       >
-        <div className="  text-xs text-white">
-          {selectedCountry}
-        </div>
+        <div className="  text-xs text-white">{selectedCountry}</div>
       </div>
 
       {/* Filter/Search Overlay */}
