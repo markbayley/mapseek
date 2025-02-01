@@ -62,6 +62,82 @@ export default function Map({}: MapComponentProps) {
         updateLayerVisibility();
         // Set Fog after map style loads
 
+        let hoveredPolygonId: string | number | null | undefined = null;
+
+        map.current?.addSource("countries", {
+          type: "vector",
+          url: "mapbox://mapbox.country-boundaries-v1",
+        });
+
+        // The feature-state dependent fill-opacity expression will render the hover effect
+        // when a feature's hover state is set to true.
+        map.current?.addLayer({
+          id: "country-fills",
+          type: "fill",
+          source: "countries",
+          "source-layer": "country_boundaries",
+          layout: {},
+          paint: {
+            //'fill-color': '#627BC1',
+            "fill-opacity": [
+              "case",
+              ["boolean", ["feature-state", "hover"], false],
+              0.3,
+              0.1,
+            ],
+          },
+        });
+
+        map.current?.addLayer({
+          id: "country-borders",
+          type: "line",
+          source: "countries",
+          "source-layer": "country_boundaries",
+          layout: {},
+          paint: {
+            "line-color": "#e0f2f1",
+            "line-width": 0.5,
+          },
+        });
+
+        map.current?.on("mousemove", "country-fills", (e) => {
+          if (e.features.length > 0) {
+            if (hoveredPolygonId !== null) {
+              map.current?.setFeatureState(
+                {
+                  source: "countries",
+                  sourceLayer: "country_boundaries",
+                  id: hoveredPolygonId,
+                },
+                { hover: false }
+              );
+            }
+            hoveredPolygonId = e.features[0].id;
+            map.current?.setFeatureState(
+              {
+                source: "countries",
+                sourceLayer: "country_boundaries",
+                id: hoveredPolygonId,
+              },
+              { hover: true }
+            );
+          }
+        });
+
+        map.current?.on("mouseleave", "country-fills", () => {
+          if (hoveredPolygonId !== null) {
+            map.current?.setFeatureState(
+              {
+                source: "countries",
+                sourceLayer: "country_boundaries",
+                id: hoveredPolygonId,
+              },
+              { hover: false }
+            );
+          }
+          hoveredPolygonId = null;
+        });
+
         map.current?.setFog({
           color: "rgb(186, 210, 235)", // Lower atmosphere
           "high-color": "rgb(36, 92, 223)", // Upper atmosphere
@@ -143,82 +219,6 @@ export default function Map({}: MapComponentProps) {
       map.current.addSource("data", {
         type: "geojson",
         data: countriesGeoJSON,
-      });
-
-      let hoveredPolygonId = null;
-
-      map.current?.addSource("countries", {
-        type: "vector",
-        url: "mapbox://mapbox.country-boundaries-v1",
-      });
-
-      // The feature-state dependent fill-opacity expression will render the hover effect
-      // when a feature's hover state is set to true.
-      map.current?.addLayer({
-        id: "country-fills",
-        type: "fill",
-        source: "countries",
-        "source-layer": "country_boundaries",
-        layout: {},
-        paint: {
-          //'fill-color': '#627BC1',
-          "fill-opacity": [
-            "case",
-            ["boolean", ["feature-state", "hover"], false],
-            1,
-            0.5,
-          ],
-        },
-      });
-
-      map.current.addLayer({
-        id: "country-borders",
-        type: "line",
-        source: "countries",
-        "source-layer": "country_boundaries",
-        layout: {},
-        paint: {
-          "line-color": "#e0f2f1",
-          "line-width": 1,
-        },
-      });
-
-      map.current.on("mousemove", "country-fills", (e) => {
-        if (e.features.length > 0) {
-          if (hoveredPolygonId !== null) {
-            map.current.setFeatureState(
-              {
-                source: "countries",
-                sourceLayer: "country_boundaries",
-                id: hoveredPolygonId,
-              },
-              { hover: false }
-            );
-          }
-          hoveredPolygonId = e.features[0].id;
-          map.current.setFeatureState(
-            {
-              source: "countries",
-              sourceLayer: "country_boundaries",
-              id: hoveredPolygonId,
-            },
-            { hover: true }
-          );
-        }
-      });
-
-      map.current.on("mouseleave", "country-fills", () => {
-        if (hoveredPolygonId !== null) {
-          map.current.setFeatureState(
-            {
-              source: "countries",
-              sourceLayer: "country_boundaries",
-              id: hoveredPolygonId,
-            },
-            { hover: false }
-          );
-        }
-        hoveredPolygonId = null;
       });
 
       map.current.addLayer({
