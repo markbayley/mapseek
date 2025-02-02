@@ -1,6 +1,6 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 
-const SelectCountry = ({map, gdpFilter, setGdpFilter}) => {
+const SelectCountry = ({map, gdpFilter, setGdpFilter, countryOption, setPanelOpen, panelOpen, setCountryOption}) => {
 
      // Handle country selection from the dropdown
   const handleCountrySelect = (event: React.ChangeEvent<HTMLSelectElement>) => {
@@ -16,6 +16,7 @@ const SelectCountry = ({map, gdpFilter, setGdpFilter}) => {
         zoom: 3, // Set zoom level to 3
         essential: true,
       });
+      setPanelOpen(!panelOpen)
     }
   };
 
@@ -46,10 +47,12 @@ const SelectCountry = ({map, gdpFilter, setGdpFilter}) => {
         { name: "South Africa", coordinates: [22.9375, -30.5595] },
       ];
 
+ 
+
   return (
     <div className="space-x-4">
     <select className="p-2 border rounded" onChange={handleCountrySelect}>
-      <option value="">Select a country</option>
+      <option value={countryOption}>{countryOption}</option>
       {majorCountries.map((country) => (
         <option key={country.name} value={country.name}>
           {country.name}

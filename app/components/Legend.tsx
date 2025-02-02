@@ -30,7 +30,7 @@ function Legend({ map }) {
   return (
     <div
       id="legend"
-      className="bg-white  p-2 rounded-lg absolute bottom-4 left-4 z-10 shadow-md text-xs w-80"
+      className="bg-white  p-2 rounded-lg absolute bottom-6 left-4 z-10 shadow-md text-xs w-80"
     >
       <div id="gdp-legend" className="hidden">
         <h5 className="font-semibold pb-1">GDP</h5>
