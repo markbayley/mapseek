@@ -127,82 +127,77 @@ export default function Map({}: MapComponentProps) {
           "star-intensity": 0.1, // Background star brightness
         });
 
-         // At low zooms, complete a revolution every two minutes.
-    const secondsPerRevolution = 120;
-    // Above zoom level 5, do not rotate.
-    const maxSpinZoom = 5;
-    // Rotate at intermediate speeds between zoom levels 3 and 5.
-    const slowSpinZoom = 3;
+        // At low zooms, complete a revolution every two minutes.
+        const secondsPerRevolution = 120;
+        // Above zoom level 5, do not rotate.
+        const maxSpinZoom = 5;
+        // Rotate at intermediate speeds between zoom levels 3 and 5.
+        const slowSpinZoom = 3;
 
-    let userInteracting = false;
-    let spinEnabled = true;
+        let userInteracting = false;
+        let spinEnabled = true;
 
-    function spinGlobe() {
-        const zoom = map.current?.getZoom();
-        if (spinEnabled && !userInteracting && zoom < maxSpinZoom) {
+        function spinGlobe() {
+          const zoom = map.current?.getZoom();
+          if (spinEnabled && !userInteracting && zoom < maxSpinZoom) {
             let distancePerSecond = 360 / secondsPerRevolution;
             if (zoom > slowSpinZoom) {
-                // Slow spinning at higher zooms
-                const zoomDif =
-                    (maxSpinZoom - zoom) / (maxSpinZoom - slowSpinZoom);
-                distancePerSecond *= zoomDif;
+              // Slow spinning at higher zooms
+              const zoomDif =
+                (maxSpinZoom - zoom) / (maxSpinZoom - slowSpinZoom);
+              distancePerSecond *= zoomDif;
             }
             const center = map.current?.getCenter();
             center.lng -= distancePerSecond;
             // Smoothly animate the map over one second.
             // When this animation is complete, it calls a 'moveend' event.
             map.current?.easeTo({ center, duration: 1000, easing: (n) => n });
+          }
         }
-    }
 
-    // Pause spinning on interaction
-    map.current?.on('mousedown', () => {
-        userInteracting = true;
-    });
+        // Pause spinning on interaction
+        map.current?.on("mousedown", () => {
+          userInteracting = true;
+        });
 
-    // Restart spinning the globe when interaction is complete
-    map.current?.on('mouseup', () => {
-        userInteracting = false;
-        spinGlobe();
-    });
+        // Restart spinning the globe when interaction is complete
+        map.current?.on("mouseup", () => {
+          userInteracting = false;
+          spinGlobe();
+        });
 
-    // These events account for cases where the mouse has moved
-    // off the map, so 'mouseup' will not be fired.
-    map.current?.on('dragend', () => {
-        userInteracting = false;
-        spinGlobe();
-    });
-    map.current?.on('pitchend', () => {
-        userInteracting = false;
-        spinGlobe();
-    });
-    map.current?.on('rotateend', () => {
-        userInteracting = false;
-        spinGlobe();
-    });
+        // These events account for cases where the mouse has moved
+        // off the map, so 'mouseup' will not be fired.
+        map.current?.on("dragend", () => {
+          userInteracting = false;
+          spinGlobe();
+        });
+        map.current?.on("pitchend", () => {
+          userInteracting = false;
+          spinGlobe();
+        });
+        map.current?.on("rotateend", () => {
+          userInteracting = false;
+          spinGlobe();
+        });
 
-    // When animation is complete, start spinning if there is no ongoing interaction
-    map.current?.on('moveend', () => {
-        spinGlobe();
-    });
+        // When animation is complete, start spinning if there is no ongoing interaction
+        map.current?.on("moveend", () => {
+          spinGlobe();
+        });
 
-    document?.getElementById('btn-spin').addEventListener('click', (e) => {
-        spinEnabled = !spinEnabled;
-        if (spinEnabled) {
+        document?.getElementById("btn-spin").addEventListener("click", (e) => {
+          spinEnabled = !spinEnabled;
+          if (spinEnabled) {
             spinGlobe();
-            e.target.innerHTML = 'Pause rotation';
-        } else {
-            map.stop(); // Immediately end ongoing animation
-            e.target.innerHTML = 'Start rotation';
-        }
-    });
+            e.target.innerHTML = "Pause Rotation";
+          } else {
+            map.current?.stop(); // Immediately end ongoing animation
+            e.target.innerHTML = "Start Rotation";
+          }
+        });
 
-    spinGlobe();
-
-
-
-
-
+        spinGlobe();
 
         setupClickEvents(); // Add country click event
       });
@@ -359,9 +354,9 @@ export default function Map({}: MapComponentProps) {
 
   const setupClickEvents = async () => {
     if (!map.current) return;
-  
+
     const layers = ["gdp-fill", "population-fill", "gdpcapita-fill"];
-  
+
     // Mapping of continent names to the required format
     const continentMapping: { [key: string]: string } = {
       "South America": "south-america",
@@ -385,18 +380,18 @@ export default function Map({}: MapComponentProps) {
       "Western Africa": "africa",
       "Northern Africa": "africa",
     };
-  
+
     // Single click handler for all layers
     const onLayerClick = async (e: mapboxgl.MapLayerMouseEvent) => {
       if (!map.current || !e.features?.length) return;
-      
+
       const feature = e.features[0] as mapboxgl.MapboxGeoJSONFeature;
       const { NAME, GDP_MD, POP_EST, GDP_per_capita, FIPS_10, SUBREGION } =
         feature.properties || {};
-  
+
       // Remove any existing popup
       if (popupRef.current) popupRef.current.remove();
-  
+
       // Get continent key from mapping or fallback to lowercased SUBREGION
       const continentKey = SUBREGION
         ? continentMapping[SUBREGION] || SUBREGION.toLowerCase()
@@ -406,8 +401,6 @@ export default function Map({}: MapComponentProps) {
         return;
       }
 
-
-  
       // Build the URL and fetch data
       const url = `https://raw.githubusercontent.com/factbook/factbook.json/refs/heads/master/${continentKey}/${FIPS_10?.toLowerCase()}.json`;
       console.log("url", url);
@@ -415,32 +408,35 @@ export default function Map({}: MapComponentProps) {
       const result = await res.json();
 
       const title =
-        result["Government"]?.["Country name"]?.["conventional short form"]?.["text"] || "";
+        result["Government"]?.["Country name"]?.["conventional short form"]?.[
+          "text"
+        ] || "";
 
-      setClick(title)  
-  
+      setClick(title);
+
       // Extract Economy data with optional chaining and fallback values
-      const overview =
-        result["Economy"]?.["Economic overview"]?.["text"] || "";
-      const exports = result["Economy"]?.["Exports - commodities"]?.["text"] || "";
-      const imports = result["Economy"]?.["Imports - commodities"]?.["text"] || "";
+      const overview = result["Economy"]?.["Economic overview"]?.["text"] || "";
+      const exports =
+        result["Economy"]?.["Exports - commodities"]?.["text"] || "";
+      const imports =
+        result["Economy"]?.["Imports - commodities"]?.["text"] || "";
       const industries = result["Economy"]?.["Industries"]?.["text"] || "";
       const inflation =
         result["Economy"]?.["Inflation rate (consumer prices)"]?.[
           "Inflation rate (consumer prices) 2023"
         ]?.["text"] || "";
       const unemployment =
-        result["Economy"]?.["Unemployment rate"]?.[
-          "Unemployment rate 2023"
-        ]?.["text"] || "";
-  
+        result["Economy"]?.["Unemployment rate"]?.["Unemployment rate 2023"]?.[
+          "text"
+        ] || "";
+
       const introduction =
         result["Introduction"]?.["Background"]?.["text"] || "";
       const demographics =
         result["People and Society"]?.["Demographic profile"]?.["text"] ||
         introduction;
-      const age = result["People and Society"]?.["Median age"]?.["total"]?.["text"] ||
-        "";
+      const age =
+        result["People and Society"]?.["Median age"]?.["total"]?.["text"] || "";
       const lifeExpectancy =
         result["People and Society"]?.["Life expectancy at birth"]?.[
           "total population"
@@ -457,12 +453,14 @@ export default function Map({}: MapComponentProps) {
         result["People and Society"]?.["Total fertility rate"]?.["text"] || "";
       const pop =
         result["People and Society"]?.["Population"]?.["total"]?.["text"] || "";
-  
+
       // Create simplified JSX for Economy and Society info panels
       const infoEconomy = (
         <div className="bg-white shadow-lg rounded-lg p-4 max-w-xs border-l-4 border-emerald-500 animate-fade-in transition duration-300 ease-in-out">
           <h3 className="text-lg font-semibold text-gray-800">{NAME}</h3>
-          <p className="text-xs font-semibold text-gray-500 mb-2">{SUBREGION}</p>
+          <p className="text-xs font-semibold text-gray-500 mb-2">
+            {SUBREGION}
+          </p>
           <p className="text-sm text-gray-600">
             <strong>Overview:</strong> {overview}
           </p>
@@ -471,7 +469,8 @@ export default function Map({}: MapComponentProps) {
           </p>
           <p className="text-sm text-gray-600">
             <strong>GDP:</strong>{" "}
-            {GDP_MD ? (GDP_MD / 1000000).toFixed(2).toLocaleString() : "N/A"} trillion USD
+            {GDP_MD ? (GDP_MD / 1000000).toFixed(2).toLocaleString() : "N/A"}{" "}
+            trillion USD
           </p>
           <p className="text-sm text-gray-600">
             <strong>GDP Per Capita:</strong>{" "}
@@ -491,11 +490,13 @@ export default function Map({}: MapComponentProps) {
           </p>
         </div>
       );
-  
+
       const infoSociety = (
         <div className="bg-white shadow-lg rounded-lg p-4 max-w-xs border-l-4 border-emerald-500 animate-fade-in transition duration-300 ease-in-out">
           <h3 className="text-lg font-semibold text-gray-800">{NAME}</h3>
-          <p className="text-xs font-semibold text-gray-500 mb-2">{SUBREGION}</p>
+          <p className="text-xs font-semibold text-gray-500 mb-2">
+            {SUBREGION}
+          </p>
           <p className="text-sm text-gray-600">
             <strong>Population:</strong> {pop}
           </p>
@@ -519,20 +520,18 @@ export default function Map({}: MapComponentProps) {
           </p>
         </div>
       );
-  
+
       // Set the state (assumes these state setters exist in your component)
       setSelectedEconomy(infoEconomy);
       setSelectedSociety(infoSociety);
-      setCountryOption(title)
-      setPanelOpen(true)
-      
-    
+      setCountryOption(title);
+      setPanelOpen(true);
     };
-  
+
     // Attach click and pointer events to each layer
     layers.forEach((layer) => {
       map.current?.on("click", layer, onLayerClick);
-      
+
       map.current?.on("mouseenter", layer, () => {
         if (map.current) map.current.getCanvas().style.cursor = "pointer";
       });
@@ -541,7 +540,6 @@ export default function Map({}: MapComponentProps) {
       });
     });
   };
-  
 
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -551,24 +549,23 @@ export default function Map({}: MapComponentProps) {
     return () => clearTimeout(timeout);
   }, [gdpFilter]);
 
-
-
-  console.log("countryOption", countryOption)
+  console.log("countryOption", countryOption);
 
   return (
     <div className="relative h-screen w-screen">
       {/* Map Container */}
       <div ref={mapContainer} className="absolute inset-0 h-full w-full " />
-      <button id="btn-spin">Pause rotation</button>
+      <button id="btn-spin" className="absolute bottom-6 right-4 bg-amber-500 text-white p-2 px-4 rounded-full">Pause Rotation</button>
       <Legend map={map} />
-      {panelOpen ?
-      <SelectOption
-        gdpFilter={gdpFilter}
-        selectedEconomy={selectedEconomy}
-        selectedSociety={selectedSociety}
-       
-      />
-      : ""}
+      {panelOpen ? (
+        <SelectOption
+          gdpFilter={gdpFilter}
+          selectedEconomy={selectedEconomy}
+          selectedSociety={selectedSociety}
+        />
+      ) : (
+        ""
+      )}
 
       <div className="absolute bg-transparent top-0 p-4 flex gap-4 rounded-md z-10 w-full justify-between">
         <Search
@@ -576,8 +573,9 @@ export default function Map({}: MapComponentProps) {
           setSearchTerm={setSearchTerm}
           map={map}
         />
+       
         <SelectCountry
-        countryOption={countryOption}
+          countryOption={countryOption}
           map={map}
           gdpFilter={gdpFilter}
           setGdpFilter={setGdpFilter}
@@ -585,7 +583,9 @@ export default function Map({}: MapComponentProps) {
           panelOpen={panelOpen}
           setCountryOption={setCountryOption}
         />
+       
       </div>
+      
     </div>
   );
 }
