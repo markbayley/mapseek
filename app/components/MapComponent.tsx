@@ -6,6 +6,7 @@ import Search from "./Search";
 import Legend from "./Legend";
 import SelectCountry from "./SelectCountry";
 import SelectOption from "./SelectOption";
+import useMapSpin from "./usMapSpin";
 
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || "";
 
@@ -17,15 +18,18 @@ interface MapComponentProps {
 export default function Map({}: MapComponentProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
+  const [spinEnabled, setSpinEnabled] = useState(false);
   const popupRef = useRef<mapboxgl.Popup | null>(null); // Store active popup
 
   const [searchTerm, setSearchTerm] = useState("");
   const [click, setClick] = useState("");
-  const [countryOption, setCountryOption] = useState("");
+  const [countryOption, setCountryOption] = useState("Country");
   const [panelOpen, setPanelOpen] = useState(false);
   const [gdpFilter, setGdpFilter] = useState<number>(0);
   const [selectedEconomy, setSelectedEconomy] = useState<string | null>(null);
   const [selectedSociety, setSelectedSociety] = useState<string | null>(null);
+
+  useMapSpin(map, spinEnabled);
 
   useEffect(() => {
     if (!mapContainer.current) return;
@@ -40,8 +44,6 @@ export default function Map({}: MapComponentProps) {
 
       map.current.on("load", async () => {
         await addDataLayers();
-        updateLayerVisibility();
-        // Set Fog after map style loads
 
         let hoveredPolygonId: string | number | null | undefined = null;
 
@@ -50,8 +52,6 @@ export default function Map({}: MapComponentProps) {
           url: "mapbox://mapbox.country-boundaries-v1",
         });
 
-        // The feature-state dependent fill-opacity expression will render the hover effect
-        // when a feature's hover state is set to true.
         map.current?.addLayer({
           id: "country-fills",
           type: "fill",
@@ -126,80 +126,9 @@ export default function Map({}: MapComponentProps) {
           "space-color": "rgb(11, 11, 25)", // Background color
           "star-intensity": 0.1, // Background star brightness
         });
-
-        // At low zooms, complete a revolution every two minutes.
-        const secondsPerRevolution = 120;
-        // Above zoom level 5, do not rotate.
-        const maxSpinZoom = 5;
-        // Rotate at intermediate speeds between zoom levels 3 and 5.
-        const slowSpinZoom = 3;
-
-        let userInteracting = false;
-        let spinEnabled = true;
-
-        function spinGlobe() {
-          const zoom = map.current?.getZoom();
-          if (spinEnabled && !userInteracting && zoom < maxSpinZoom) {
-            let distancePerSecond = 360 / secondsPerRevolution;
-            if (zoom > slowSpinZoom) {
-              // Slow spinning at higher zooms
-              const zoomDif =
-                (maxSpinZoom - zoom) / (maxSpinZoom - slowSpinZoom);
-              distancePerSecond *= zoomDif;
-            }
-            const center = map.current?.getCenter();
-            center.lng -= distancePerSecond;
-            // Smoothly animate the map over one second.
-            // When this animation is complete, it calls a 'moveend' event.
-            map.current?.easeTo({ center, duration: 1000, easing: (n) => n });
-          }
-        }
-
-        // Pause spinning on interaction
-        map.current?.on("mousedown", () => {
-          userInteracting = true;
-        });
-
-        // Restart spinning the globe when interaction is complete
-        map.current?.on("mouseup", () => {
-          userInteracting = false;
-          spinGlobe();
-        });
-
-        // These events account for cases where the mouse has moved
-        // off the map, so 'mouseup' will not be fired.
-        map.current?.on("dragend", () => {
-          userInteracting = false;
-          spinGlobe();
-        });
-        map.current?.on("pitchend", () => {
-          userInteracting = false;
-          spinGlobe();
-        });
-        map.current?.on("rotateend", () => {
-          userInteracting = false;
-          spinGlobe();
-        });
-
-        // When animation is complete, start spinning if there is no ongoing interaction
-        map.current?.on("moveend", () => {
-          spinGlobe();
-        });
-
-        document?.getElementById("btn-spin").addEventListener("click", (e) => {
-          spinEnabled = !spinEnabled;
-          if (spinEnabled) {
-            spinGlobe();
-            e.target.innerHTML = "Pause Rotation";
-          } else {
-            map.current?.stop(); // Immediately end ongoing animation
-            e.target.innerHTML = "Start Rotation";
-          }
-        });
-
-        spinGlobe();
-
-        setupClickEvents(); // Add country click event
+        setSpinEnabled(true);
+        setupClickEvents();
+        updateLayerVisibility();
       });
     };
 
@@ -212,146 +141,6 @@ export default function Map({}: MapComponentProps) {
     };
   }, []);
 
-  const addDataLayers = async () => {
-    const response = await fetch(
-      "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_admin_0_countries.geojson"
-    );
-    const countriesGeoJSON = await response.json();
-
-    countriesGeoJSON.features.forEach((feature: any) => {
-      const gdp = feature.properties.GDP_MD;
-      const population = feature.properties.POP_EST;
-      if (gdp && population && population > 0) {
-        feature.properties.GDP_per_capita = (gdp * 1000) / population;
-      }
-    });
-
-    if (map.current && map.current.isStyleLoaded()) {
-      map.current.addSource("data", {
-        type: "geojson",
-        data: countriesGeoJSON,
-      });
-
-      map.current.addLayer({
-        id: "gdp-fill",
-        type: "fill",
-        source: "data",
-        // 'source-layer': 'country_boundaries',
-        paint: {
-          "fill-color": [
-            "interpolate",
-            ["linear"],
-            ["get", "GDP_MD"],
-            0,
-            "#f0f0f0",
-            100000,
-            "#ffffb2",
-            1000000,
-            "#fd8d3c",
-            10000000,
-            "#e31a1c",
-          ],
-          "fill-opacity": 0.7,
-        },
-      });
-
-      map.current.addLayer({
-        id: "population-fill",
-        type: "fill",
-        source: "data",
-        //'source-layer': 'country_boundaries',
-        paint: {
-          "fill-color": [
-            "interpolate",
-            ["linear"],
-            ["get", "POP_EST"],
-
-            0,
-            "#e0f2f1", // Light Emerald
-            10000000,
-            "#b2dfdb", // Soft Emerald
-            100000000,
-            "#4db6ac", // Emerald
-            1000000000,
-            "#e31a1c", // Dark Emerald
-          ],
-          "fill-opacity": 0.9,
-        },
-      });
-
-      map.current.addLayer({
-        id: "gdpcapita-fill",
-        type: "fill",
-        source: "data",
-        // 'source-layer': 'country_boundaries',
-        paint: {
-          "fill-color": [
-            "interpolate",
-            ["linear"],
-            ["get", "GDP_per_capita"],
-
-            0,
-            "#e0f7fa", // Light Blue
-            2,
-            "#b2ebf2", // Soft Blue
-            20,
-            "#4dd0e1", // Blue
-            50,
-            "#fd8d3c", // Dark Blue
-          ],
-          //"fill-opacity": 0.6,
-        },
-      });
-
-      // Add other layers (population, GDP per capita) here...
-
-      // Call updateLayerVisibility after the layers are added
-      updateLayerVisibility();
-    } else {
-      console.error("Map style is not loaded yet");
-    }
-  };
-
-  // Function to update layer visibility
-  const updateLayerVisibility = () => {
-    if (!map.current || !map.current.isStyleLoaded()) return;
-
-    const layers = ["gdp-fill", "population-fill", "gdpcapita-fill"];
-    layers.forEach((layer) => {
-      if (map.current?.getLayer(layer)) {
-        map.current?.setLayoutProperty(layer, "visibility", "none");
-      }
-    });
-
-    switch (gdpFilter) {
-      case 0:
-        if (map.current.getLayer("gdp-fill")) {
-          map.current.setLayoutProperty("gdp-fill", "visibility", "visible");
-        }
-        break;
-      case 1000000000000:
-        if (map.current.getLayer("population-fill")) {
-          map.current.setLayoutProperty(
-            "population-fill",
-            "visibility",
-            "visible"
-          );
-        }
-        break;
-      case 3000000000000:
-        if (map.current.getLayer("gdpcapita-fill")) {
-          map.current.setLayoutProperty(
-            "gdpcapita-fill",
-            "visibility",
-            "visible"
-          );
-        }
-        break;
-      default:
-        break;
-    }
-  };
-
   const setupClickEvents = async () => {
     if (!map.current) return;
 
@@ -361,10 +150,10 @@ export default function Map({}: MapComponentProps) {
     const continentMapping: { [key: string]: string } = {
       "South America": "south-america",
       "Northern America": "north-america",
-      Caribbean: "central-america-n-caribbean",
+      "Caribbean": "central-america-n-caribbean",
       "Central America": "central-america-n-caribbean",
       "Australia and New Zealand": "australia-oceania",
-      Melanesia: "australia-oceania",
+      "Melanesia": "australia-oceania",
       "South-Eastern Asia": "east-n-southeast-asia",
       "Eastern Asia": "east-n-southeast-asia",
       "Southern Asia": "south-asia",
@@ -414,7 +203,6 @@ export default function Map({}: MapComponentProps) {
 
       setClick(title);
 
-      // Extract Economy data with optional chaining and fallback values
       const overview = result["Economy"]?.["Economic overview"]?.["text"] || "";
       const exports =
         result["Economy"]?.["Exports - commodities"]?.["text"] || "";
@@ -454,7 +242,6 @@ export default function Map({}: MapComponentProps) {
       const pop =
         result["People and Society"]?.["Population"]?.["total"]?.["text"] || "";
 
-      // Create simplified JSX for Economy and Society info panels
       const infoEconomy = (
         <div className="bg-white shadow-lg rounded-lg p-4 max-w-xs border-l-4 border-emerald-500 animate-fade-in transition duration-300 ease-in-out">
           <h3 className="text-lg font-semibold text-gray-800">{NAME}</h3>
@@ -521,14 +308,13 @@ export default function Map({}: MapComponentProps) {
         </div>
       );
 
-      // Set the state (assumes these state setters exist in your component)
       setSelectedEconomy(infoEconomy);
       setSelectedSociety(infoSociety);
+
       setCountryOption(title);
       setPanelOpen(true);
     };
 
-    // Attach click and pointer events to each layer
     layers.forEach((layer) => {
       map.current?.on("click", layer, onLayerClick);
 
@@ -541,6 +327,139 @@ export default function Map({}: MapComponentProps) {
     });
   };
 
+  const addDataLayers = async () => {
+    const response = await fetch(
+      "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_admin_0_countries.geojson"
+    );
+    const countriesGeoJSON = await response.json();
+
+    countriesGeoJSON.features.forEach((feature: any) => {
+      const gdp = feature.properties.GDP_MD;
+      const population = feature.properties.POP_EST;
+      if (gdp && population && population > 0) {
+        feature.properties.GDP_per_capita = (gdp * 1000) / population;
+      }
+    });
+
+    if (map.current && map.current.isStyleLoaded()) {
+      map.current.addSource("data", {
+        type: "geojson",
+        data: countriesGeoJSON,
+      });
+
+      map.current.addLayer({
+        id: "gdp-fill",
+        type: "fill",
+        source: "data",
+        paint: {
+          "fill-color": [
+            "interpolate",
+            ["linear"],
+            ["get", "GDP_MD"],
+            0,
+            "#f0f0f0",
+            100000,
+            "#ffffb2",
+            1000000,
+            "#fd8d3c",
+            10000000,
+            "#e31a1c",
+          ],
+          "fill-opacity": 0.7,
+        },
+      });
+
+      map.current.addLayer({
+        id: "population-fill",
+        type: "fill",
+        source: "data",
+        paint: {
+          "fill-color": [
+            "interpolate",
+            ["linear"],
+            ["get", "POP_EST"],
+
+            0,
+            "#e0f2f1", // Light Emerald
+            10000000,
+            "#b2dfdb", // Soft Emerald
+            100000000,
+            "#4db6ac", // Emerald
+            1000000000,
+            "#e31a1c", // Dark Emerald
+          ],
+          "fill-opacity": 0.9,
+        },
+      });
+
+      map.current.addLayer({
+        id: "gdpcapita-fill",
+        type: "fill",
+        source: "data",
+        paint: {
+          "fill-color": [
+            "interpolate",
+            ["linear"],
+            ["get", "GDP_per_capita"],
+
+            0,
+            "#e0f7fa", // Light Blue
+            2,
+            "#b2ebf2", // Soft Blue
+            20,
+            "#4dd0e1", // Blue
+            50,
+            "#fd8d3c", // Dark Blue
+          ],
+          //"fill-opacity": 0.6,
+        },
+      });
+
+      updateLayerVisibility();
+    } else {
+      console.error("Map style is not loaded yet");
+    }
+  };
+
+  const updateLayerVisibility = () => {
+    if (!map.current || !map.current.isStyleLoaded()) return;
+
+    const layers = ["gdp-fill", "population-fill", "gdpcapita-fill"];
+    layers.forEach((layer) => {
+      if (map.current?.getLayer(layer)) {
+        map.current?.setLayoutProperty(layer, "visibility", "none");
+      }
+    });
+
+    switch (gdpFilter) {
+      case 0:
+        if (map.current.getLayer("gdp-fill")) {
+          map.current.setLayoutProperty("gdp-fill", "visibility", "visible");
+        }
+        break;
+      case 1000000000000:
+        if (map.current.getLayer("population-fill")) {
+          map.current.setLayoutProperty(
+            "population-fill",
+            "visibility",
+            "visible"
+          );
+        }
+        break;
+      case 3000000000000:
+        if (map.current.getLayer("gdpcapita-fill")) {
+          map.current.setLayoutProperty(
+            "gdpcapita-fill",
+            "visibility",
+            "visible"
+          );
+        }
+        break;
+      default:
+        break;
+    }
+  };
+
   useEffect(() => {
     const timeout = setTimeout(() => {
       updateLayerVisibility();
@@ -549,13 +468,28 @@ export default function Map({}: MapComponentProps) {
     return () => clearTimeout(timeout);
   }, [gdpFilter]);
 
+  useEffect(() => {
+    setCountryOption(click);
+  }, [countryOption]);
+
   console.log("countryOption", countryOption);
+  const handleSpinButtonClick = () => {
+    setSpinEnabled((prev) => !prev); // Toggle spinning state
+  };
 
   return (
     <div className="relative h-screen w-screen">
       {/* Map Container */}
       <div ref={mapContainer} className="absolute inset-0 h-full w-full " />
-      <button id="btn-spin" className="absolute bottom-6 right-4 bg-amber-500 text-white p-2 px-4 rounded-full">Pause Rotation</button>
+
+      <button
+        id="btn-spin"
+        onClick={handleSpinButtonClick}
+        className="absolute bottom-6 right-4 bg-amber-500 text-white p-2 px-4 rounded-full"
+      >
+        {spinEnabled ? "Pause Rotation" : "Start Rotation"}
+      </button>
+
       <Legend map={map} />
       {panelOpen ? (
         <SelectOption
@@ -573,7 +507,7 @@ export default function Map({}: MapComponentProps) {
           setSearchTerm={setSearchTerm}
           map={map}
         />
-       
+
         <SelectCountry
           countryOption={countryOption}
           map={map}
@@ -583,9 +517,7 @@ export default function Map({}: MapComponentProps) {
           panelOpen={panelOpen}
           setCountryOption={setCountryOption}
         />
-       
       </div>
-      
     </div>
   );
 }

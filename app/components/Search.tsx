@@ -1,9 +1,7 @@
-import React, { useEffect } from 'react'
+import React, { useEffect } from "react";
 
-function Search({searchTerm, setSearchTerm, map}) {
-   
-
-      // Function to update the data dynamically when searchTerm changes
+function Search({ searchTerm, setSearchTerm, map }) {
+  // Function to update the data dynamically when searchTerm changes
   const updateGeoJSONData = async () => {
     const response = await fetch(
       "https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_admin_0_countries.geojson"
@@ -46,17 +44,18 @@ function Search({searchTerm, setSearchTerm, map}) {
     if (map.current) updateGeoJSONData();
   }, [searchTerm]); // Runs only when searchTerm changes
 
-
-
   return (
-    <div>     <input
+    <div className="hidden md-flex">
+      {" "}
+      <input
         type="text"
         placeholder="Search countries..."
         className="p-2 border rounded"
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
-      /></div>
-  )
+      />
+    </div>
+  );
 }
 
-export default Search
+export default Search;

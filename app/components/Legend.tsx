@@ -17,10 +17,7 @@ function Legend({ map }) {
     }
   };
 
-  // Example usage when a layer is selected
-  map.current?.on("click", "gdp-fill", () => showLegend("gdp"));
-  map.current?.on("click", "population-fill", () => showLegend("population"));
-  map.current?.on("click", "gdpcapita-fill", () => showLegend("gdp-capita"));
+
 
   // Add click events to show legends
   map.current?.on("click", "gdp-fill", () => showLegend("gdp"));
@@ -30,7 +27,7 @@ function Legend({ map }) {
   return (
     <div
       id="legend"
-      className="bg-white  p-2 rounded-lg absolute bottom-6 left-4 z-10 shadow-md text-xs w-80"
+      className="bg-white  p-2 rounded-lg absolute bottom-4 left-4 z-10 shadow-md text-xs w-80"
     >
       <div id="gdp-legend" className="hidden">
         <h5 className="font-semibold pb-1">GDP</h5>

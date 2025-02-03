@@ -16,10 +16,11 @@ const SelectCountry = ({map, gdpFilter, setGdpFilter, countryOption, setPanelOpe
         zoom: 3, // Set zoom level to 3
         essential: true,
       });
+      setCountryOption(selectedCountryName)
       setPanelOpen(!panelOpen)
     }
   };
-
+  console.log("countryOptionsc", countryOption);
     const majorCountries = [
         { name: "United States", coordinates: [-95.7129, 37.0902] },
         { name: "Canada", coordinates: [-106.3468, 56.1304] },
@@ -51,8 +52,8 @@ const SelectCountry = ({map, gdpFilter, setGdpFilter, countryOption, setPanelOpe
 
   return (
     <div className="space-x-4">
-    <select className="p-2 border rounded" onChange={handleCountrySelect}>
-      <option value={countryOption}>{countryOption}</option>
+    <select className="p-2 border rounded" onChange={handleCountrySelect} value={countryOption}>
+      <option value="Select Country">Select Country</option>
       {majorCountries.map((country) => (
         <option key={country.name} value={country.name}>
           {country.name}
