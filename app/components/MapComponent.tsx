@@ -308,6 +308,8 @@ export default function Map({}: MapComponentProps) {
         </div>
       );
 
+      
+
       setSelectedEconomy(infoEconomy);
       setSelectedSociety(infoSociety);
 
@@ -347,27 +349,7 @@ export default function Map({}: MapComponentProps) {
         data: countriesGeoJSON,
       });
 
-      map.current.addLayer({
-        id: "gdp-fill",
-        type: "fill",
-        source: "data",
-        paint: {
-          "fill-color": [
-            "interpolate",
-            ["linear"],
-            ["get", "GDP_MD"],
-            0,
-            "#f0f0f0",
-            100000,
-            "#ffffb2",
-            1000000,
-            "#fd8d3c",
-            10000000,
-            "#e31a1c",
-          ],
-          "fill-opacity": 0.7,
-        },
-      });
+  
 
       map.current.addLayer({
         id: "population-fill",
@@ -415,6 +397,28 @@ export default function Map({}: MapComponentProps) {
         },
       });
 
+      map.current.addLayer({
+        id: "gdp-fill",
+        type: "fill",
+        source: "data",
+        paint: {
+          "fill-color": [
+            "interpolate",
+            ["linear"],
+            ["get", "GDP_MD"],
+            0,
+            "#D1D5DB",
+            100000,
+            "#FBBF24",
+            1000000,
+            "#F97316",
+            10000000,
+            "#B91C1C",
+          ],
+          "fill-opacity": 0.7,
+        },
+      });
+
       updateLayerVisibility();
     } else {
       console.error("Map style is not loaded yet");
@@ -458,7 +462,34 @@ export default function Map({}: MapComponentProps) {
       default:
         break;
     }
+
+
+   
+  
+  
   };
+
+
+  const showLegend = (layer: string) => {
+    // Hide all legends first
+    document.getElementById("gdp-legend").style.display = "none";
+    document.getElementById("population-legend").style.display = "none";
+    document.getElementById("gdp-capita-legend").style.display = "none";
+
+    // Show the selected legend
+    if (layer === "gdp") {
+      document.getElementById("gdp-legend").style.display = "block";
+    } else if (layer === "population") {
+      document.getElementById("population-legend").style.display = "block";
+    } else if (layer === "gdp-capita") {
+      document.getElementById("gdp-capita-legend").style.display = "block";
+    }
+  };
+
+  // Add click events to show legends
+  map.current?.on("click", "gdp-fill", () => showLegend("gdp"));
+  map.current?.on("click", "population-fill", () => showLegend("population"));
+  map.current?.on("click", "gdpcapita-fill", () => showLegend("gdp-capita"));
 
   useEffect(() => {
     const timeout = setTimeout(() => {
