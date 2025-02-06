@@ -1,6 +1,6 @@
 import React from "react";
 
-function Legend({ map }) {
+function Legend() {
 
 
   return (

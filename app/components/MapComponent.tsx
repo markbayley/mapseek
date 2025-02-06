@@ -29,6 +29,45 @@ export default function Map({}: MapComponentProps) {
   const [selectedEconomy, setSelectedEconomy] = useState<string | null>(null);
   const [selectedSociety, setSelectedSociety] = useState<string | null>(null);
 
+  const [exportPartners, setExportPartners] = useState<string | null>(null);
+
+  const parseExportPartners = (exports: string): string[] => {
+    return exports
+      .split(",")
+      .map((country) => {
+        // Split by the percentage and take the first part, which is the country name
+        const countryName = country.split(/\s*\d+%/)[0].trim();
+        return countryName; // Return the full country name
+      })
+      .filter(Boolean); // Remove any empty entries
+  };
+
+  // const parseExportPartners = (exports: string): string[] => {
+  //   return exports
+  //     .split(",")
+  //     .map((country) => country.split(" ")[0].trim()) // Get the country name before the percentage
+  //     .filter(Boolean); // Remove any empty entries
+  // };
+
+  const highlightExportPartners = () => {
+    const partners = parseExportPartners(exportPartners);
+    if (!map.current || partners.length === 0) return;
+  
+    // Create a filter to highlight all partners
+    const filter = ["any", ...partners.map(country => ["==", "name", country])];
+
+    console.log("Export Partners:", partners);
+console.log("Filter being applied:", filter);
+  
+    // Apply the filter to the country layer
+    map.current.setFilter("export-fill", filter);
+  };
+
+
+
+
+
+
   useMapSpin(map, spinEnabled);
 
   useEffect(() => {
@@ -49,8 +88,26 @@ export default function Map({}: MapComponentProps) {
 
         map.current?.addSource("countries", {
           type: "vector",
-          url: "mapbox://mapbox.country-boundaries-v1",
+          url: 'mapbox://mapbox.country-boundaries-v1',
         });
+
+        map.current?.addLayer({
+          id: "countries",
+          type: "fill",
+          source: "countries",
+          "source-layer": "country_boundaries",
+          filter: [
+            'all',
+            ['match', ['get', 'worldview'], ['all', 'US'], true, false],
+            ["!=", "true", ["get", "disputed"]],
+        ],
+          paint: {
+           "fill-color": "#ff69b4",
+            //"fill-opacity": 0.7
+          }
+        });
+
+       
 
         map.current?.addLayer({
           id: "country-fills",
@@ -58,6 +115,7 @@ export default function Map({}: MapComponentProps) {
           source: "countries",
           "source-layer": "country_boundaries",
           layout: {},
+     
           paint: {
             //'fill-color': '#627BC1',
             "fill-opacity": [
@@ -74,10 +132,23 @@ export default function Map({}: MapComponentProps) {
           type: "line",
           source: "countries",
           "source-layer": "country_boundaries",
+    
           layout: {},
           paint: {
             "line-color": "#e0f2f1",
             "line-width": 0.5,
+          },
+        });
+
+        map.current?.addLayer({
+          id: "export-fill",
+          type: "fill",
+          source: "countries",
+          "source-layer": "country_boundaries",
+    
+          paint: {
+            //"fill-color": "blue",
+            "fill-opacity": 1,
           },
         });
 
@@ -150,10 +221,10 @@ export default function Map({}: MapComponentProps) {
     const continentMapping: { [key: string]: string } = {
       "South America": "south-america",
       "Northern America": "north-america",
-      "Caribbean": "central-america-n-caribbean",
+      Caribbean: "central-america-n-caribbean",
       "Central America": "central-america-n-caribbean",
       "Australia and New Zealand": "australia-oceania",
-      "Melanesia": "australia-oceania",
+      Melanesia: "australia-oceania",
       "South-Eastern Asia": "east-n-southeast-asia",
       "Eastern Asia": "east-n-southeast-asia",
       "Southern Asia": "south-asia",
@@ -182,10 +253,15 @@ export default function Map({}: MapComponentProps) {
       if (popupRef.current) popupRef.current.remove();
 
       // Get continent key from mapping or fallback to lowercased SUBREGION
-      const continentKey = SUBREGION
+      const continentKey = 
+      FIPS_10 == 'MX' ? "north-america" : 
+      FIPS_10 == 'RS' ? "central-asia" : 
+      FIPS_10 == 'IR' ? "middle-east" : 
+      SUBREGION
         ? continentMapping[SUBREGION] || SUBREGION.toLowerCase()
         : null;
       if (!continentKey) {
+       
         console.error("Undefined continent key");
         return;
       }
@@ -206,8 +282,15 @@ export default function Map({}: MapComponentProps) {
       const overview = result["Economy"]?.["Economic overview"]?.["text"] || "";
       const exports =
         result["Economy"]?.["Exports - commodities"]?.["text"] || "";
+        const exportsPartners =
+        result["Economy"]?.["Exports - partners"]?.["text"] || "";
+        setExportPartners(exportsPartners)
+
+  
       const imports =
         result["Economy"]?.["Imports - commodities"]?.["text"] || "";
+        const importsPartners =
+        result["Economy"]?.["Imports - partners"]?.["text"] || "";
       const industries = result["Economy"]?.["Industries"]?.["text"] || "";
       const inflation =
         result["Economy"]?.["Inflation rate (consumer prices)"]?.[
@@ -243,8 +326,11 @@ export default function Map({}: MapComponentProps) {
         result["People and Society"]?.["Population"]?.["total"]?.["text"] || "";
 
       const infoEconomy = (
-        <div className="bg-white shadow-lg rounded-lg p-4 max-w-xs border-l-4 border-emerald-500 animate-fade-in transition duration-300 ease-in-out">
+        <div className="bg-white shadow-lg rounded-lg p-4 max-w-xs border-l-4 border-amber-500 animate-fade-in transition duration-300 ease-in-out">
+        <div className="flex justify-between">
           <h3 className="text-lg font-semibold text-gray-800">{NAME}</h3>
+          <button onClick={() => setPanelOpen(false)} className="text-gray-600 rounded-full flex items-center justify-center w-5 h-5 text-md ">x</button>
+          </div>
           <p className="text-xs font-semibold text-gray-500 mb-2">
             {SUBREGION}
           </p>
@@ -252,7 +338,7 @@ export default function Map({}: MapComponentProps) {
             <strong>Overview:</strong> {overview}
           </p>
           <p className="text-sm text-gray-600">
-            <strong>Industries:</strong> {industries}
+            <strong>Industries:</strong> {industries.substring(0, 300)}
           </p>
           <p className="text-sm text-gray-600">
             <strong>GDP:</strong>{" "}
@@ -267,7 +353,13 @@ export default function Map({}: MapComponentProps) {
             <strong>Exports:</strong> {exports}
           </p>
           <p className="text-sm text-gray-600">
+            <strong>Exports Partners:</strong> {exportsPartners}
+          </p>
+          <p className="text-sm text-gray-600">
             <strong>Imports:</strong> {imports}
+          </p>
+          <p className="text-sm text-gray-600">
+            <strong>Imports Partners:</strong> {importsPartners}
           </p>
           <p className="text-sm text-gray-600">
             <strong>Inflation Rate:</strong> {inflation}
@@ -280,7 +372,10 @@ export default function Map({}: MapComponentProps) {
 
       const infoSociety = (
         <div className="bg-white shadow-lg rounded-lg p-4 max-w-xs border-l-4 border-emerald-500 animate-fade-in transition duration-300 ease-in-out">
-          <h3 className="text-lg font-semibold text-gray-800">{NAME}</h3>
+           <div className="flex justify-between">
+        <h3 className="text-lg font-semibold text-gray-800">{NAME}</h3>
+        <button onClick={() => setPanelOpen(false)} className="text-gray-600 rounded-full flex items-center justify-center w-5 h-5 text-md ">x</button>
+        </div>
           <p className="text-xs font-semibold text-gray-500 mb-2">
             {SUBREGION}
           </p>
@@ -308,7 +403,38 @@ export default function Map({}: MapComponentProps) {
         </div>
       );
 
-      
+      const infoGovernment = (
+        <div className="bg-white shadow-lg rounded-lg p-4 max-w-xs border-l-4 border-emerald-500 animate-fade-in transition duration-300 ease-in-out">
+           <div className="flex justify-between">
+        <h3 className="text-lg font-semibold text-gray-800">{NAME}</h3>
+        <button onClick={() => setPanelOpen(false)} className="text-gray-600 rounded-full flex items-center justify-center w-5 h-5 text-md hover:bg-amber-500">x</button>
+        </div>
+          <p className="text-xs font-semibold text-gray-500 mb-2">
+            {SUBREGION}
+          </p>
+          <p className="text-sm text-gray-600">
+            <strong>Capital:</strong> {pop}
+          </p>
+          <p className="text-sm text-gray-600">
+            <strong>Govt. Type:</strong> {lifeExpectancy}
+          </p>
+          <p className="text-sm text-gray-600">
+            <strong>Median Age:</strong> {age}
+          </p>
+          <p className="text-sm text-gray-600">
+            <strong>Demography:</strong> {demographics.substring(3, 700)}...
+          </p>
+          <p className="text-sm text-gray-600">
+            <strong>Urbanization:</strong> {urbanization}
+          </p>
+          <p className="text-sm text-gray-600">
+            <strong>Literacy:</strong> {literacy}
+          </p>
+          <p className="text-sm text-gray-600">
+            <strong>Fertility Rate:</strong> {fertility}
+          </p>
+        </div>
+      );
 
       setSelectedEconomy(infoEconomy);
       setSelectedSociety(infoSociety);
@@ -317,6 +443,7 @@ export default function Map({}: MapComponentProps) {
       setPanelOpen(true);
     };
 
+  
     layers.forEach((layer) => {
       map.current?.on("click", layer, onLayerClick);
 
@@ -348,6 +475,8 @@ export default function Map({}: MapComponentProps) {
         type: "geojson",
         data: countriesGeoJSON,
       });
+
+   
 
   
 
@@ -385,15 +514,15 @@ export default function Map({}: MapComponentProps) {
             ["get", "GDP_per_capita"],
 
             0,
-            "#e0f7fa", // Light Blue
+            "#e0f7fa", 
             2,
-            "#b2ebf2", // Soft Blue
+            "#b2ebf2", 
             20,
-            "#4dd0e1", // Blue
+            "#4dd0e1", 
             50,
-            "#fd8d3c", // Dark Blue
+            "#fd8d3c", 
           ],
-          //"fill-opacity": 0.6,
+          "fill-opacity": 0.6,
         },
       });
 
@@ -415,9 +544,11 @@ export default function Map({}: MapComponentProps) {
             10000000,
             "#B91C1C",
           ],
-          "fill-opacity": 0.7,
+          "fill-opacity": 0.1,
         },
       });
+
+     
 
       updateLayerVisibility();
     } else {
@@ -438,11 +569,13 @@ export default function Map({}: MapComponentProps) {
     switch (gdpFilter) {
       case 0:
         if (map.current.getLayer("gdp-fill")) {
+          showLegend("gdp")
           map.current.setLayoutProperty("gdp-fill", "visibility", "visible");
         }
         break;
       case 1000000000000:
         if (map.current.getLayer("population-fill")) {
+         showLegend("population")
           map.current.setLayoutProperty(
             "population-fill",
             "visibility",
@@ -452,6 +585,7 @@ export default function Map({}: MapComponentProps) {
         break;
       case 3000000000000:
         if (map.current.getLayer("gdpcapita-fill")) {
+          showLegend("gdp-capita")
           map.current.setLayoutProperty(
             "gdpcapita-fill",
             "visibility",
@@ -462,13 +596,7 @@ export default function Map({}: MapComponentProps) {
       default:
         break;
     }
-
-
-   
-  
-  
   };
-
 
   const showLegend = (layer: string) => {
     // Hide all legends first
@@ -508,10 +636,23 @@ export default function Map({}: MapComponentProps) {
     setSpinEnabled((prev) => !prev); // Toggle spinning state
   };
 
+  console.log("exportPartners", exportPartners)
+
   return (
     <div className="relative h-screen w-screen">
       {/* Map Container */}
       <div ref={mapContainer} className="absolute inset-0 h-full w-full " />
+
+      <div className="relative h-screen w-screen">
+      <div ref={mapContainer} className="absolute inset-0 h-full w-full" />
+      <button onClick={highlightExportPartners} className="absolute top-28 right-4 border border-emerald-500 text-white p-2 rounded w-32">
+        Export Partners
+      </button>
+      <button onClick={highlightExportPartners} className="absolute top-16 right-4 border border-emerald-500 text-white p-2 rounded w-32">
+        Import Partners
+      </button>
+      {/* Other components */}
+    </div>
 
       <button
         id="btn-spin"
@@ -521,7 +662,7 @@ export default function Map({}: MapComponentProps) {
         {spinEnabled ? "Pause Rotation" : "Start Rotation"}
       </button>
 
-      <Legend map={map} />
+      <Legend  />
       {panelOpen ? (
         <SelectOption
           gdpFilter={gdpFilter}
@@ -547,6 +688,7 @@ export default function Map({}: MapComponentProps) {
           setPanelOpen={setPanelOpen}
           panelOpen={panelOpen}
           setCountryOption={setCountryOption}
+          showLegend={showLegend}
         />
       </div>
     </div>

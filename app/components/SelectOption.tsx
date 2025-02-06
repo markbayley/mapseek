@@ -7,6 +7,7 @@ const SelectOption = ({gdpFilter, selectedEconomy, selectedSociety}) => {
     id="info"
     className="bg-transparent  rounded absolute top-16 left-4 z-10 shadow-md text-xs mt-1 text-white max-w-xs"
   >
+    
     <div className="  text-xs text-white">
       {gdpFilter == 0 ? selectedEconomy : selectedSociety}
     </div>

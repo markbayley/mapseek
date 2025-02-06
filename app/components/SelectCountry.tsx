@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react'
 
-const SelectCountry = ({map, gdpFilter, setGdpFilter, countryOption, setPanelOpen, panelOpen, setCountryOption}) => {
+const SelectCountry = ({map, gdpFilter, setGdpFilter, countryOption, setPanelOpen, panelOpen, setCountryOption, showLegend}) => {
 
      // Handle country selection from the dropdown
   const handleCountrySelect = (event: React.ChangeEvent<HTMLSelectElement>) => {
@@ -66,7 +66,7 @@ const SelectCountry = ({map, gdpFilter, setGdpFilter, countryOption, setPanelOpe
       onChange={(e) => setGdpFilter(Number(e.target.value))}
     >
       <option value="0">Economy</option>
-      <option value="1000000000000">Society</option>
+      <option value="1000000000000" id="population">Society</option>
       <option value="3000000000000">GDP Per Capita</option>
     </select>
   </div>
