@@ -27,6 +27,8 @@ export default function Map({}: MapComponentProps) {
   const [countryOption, setCountryOption] = useState("Country");
   const [panelOpen, setPanelOpen] = useState(false);
   const [gdpFilter, setGdpFilter] = useState<number>(0);
+
+
   const [selectedEconomy, setSelectedEconomy] = useState<string | null>(null);
   const [selectedSociety, setSelectedSociety] = useState<string | null>(null);
 
@@ -55,16 +57,16 @@ export default function Map({}: MapComponentProps) {
           url: "mapbox://mapbox.country-boundaries-v1",
         });
 
-        const WORLDVIEW = "US";
-        const worldview_filter = [
-          "all",
-          ["==", ["get", "disputed"], "false"],
-          [
-            "any",
-            ["==", "all", ["get", "worldview"]],
-            ["in", WORLDVIEW, ["get", "worldview"]],
-          ],
-        ];
+        // const WORLDVIEW = "US";
+        // const worldview_filter = [
+        //   "all",
+        //   ["==", ["get", "disputed"], "false"],
+        //   [
+        //     "any",
+        //     ["==", "all", ["get", "worldview"]],
+        //     ["in", WORLDVIEW, ["get", "worldview"]],
+        //   ],
+        // ];
 
         map.current?.addLayer({
           id: "country-fills",
@@ -82,23 +84,23 @@ export default function Map({}: MapComponentProps) {
               0.1,
             ],
           },
-          filter: worldview_filter,
+          //filter: worldview_filter,
         });
-
-        
 
         map.current?.addLayer({
           id: "export-fill",
           type: "fill",
           source: "countries",
           "source-layer": "country_boundaries",
-
+    
           paint: {
             "fill-color": "#6d28d9",
             "fill-opacity": 1,
           },
-          filter: worldview_filter,
+          //filter: worldview_filter,
         });
+
+    
 
         let hoveredPolygonId: string | number | null | undefined = null;
 
@@ -294,6 +296,8 @@ export default function Map({}: MapComponentProps) {
         result["Economy"]?.["Exports - partners"]?.["text"] || "";
       setExportPartners(exportsPartners);
 
+  
+
       const imports =
         result["Economy"]?.["Imports - commodities"]?.["text"] || "";
       const importsPartners =
@@ -365,8 +369,9 @@ export default function Map({}: MapComponentProps) {
             <strong>Exports:</strong> {exports}
           </p>
           <p className="text-sm text-gray-600">
-            <strong>Exports Partners:</strong> {exportsPartners}
           </p>
+
+      
           <p className="text-sm text-gray-600">
             <strong>Imports:</strong> {imports}
           </p>
@@ -715,7 +720,7 @@ export default function Map({}: MapComponentProps) {
     "Croatia": "Hrvatska",
     "Cuba": "Cuba",
     "Cyprus": "Κύπρος",
-    "Czech Republic": "Česká republika",
+    "Czechia": "Česká republika",
     "Denmark": "Danmark",
     "Djibouti": "Djibouti",
     "Dominica": "Dominica",
@@ -792,7 +797,7 @@ export default function Map({}: MapComponentProps) {
     "Nauru": "Nauru",
     "Nepal": "नेपाल",
     "Netherlands": "Nederland",
-    "New Zealand": "New Zealand",
+    "NZ": "New Zealand",
     "Nicaragua": "Nicaragua",
     "Niger": "Niger",
     "Nigeria": "Nigeria",
@@ -837,7 +842,7 @@ export default function Map({}: MapComponentProps) {
     "Sudan": "السودان",
     "Suriname": "Suriname",
     "Sweden": "Sverige",
-    "Switzerland": "Schweiz",
+    "Switzerland": "Switzerland",
     "Syria": "سوريا",
     "Taiwan": "臺灣",
     "Tajikistan": "Тоҷикистон",
@@ -892,6 +897,8 @@ export default function Map({}: MapComponentProps) {
   
     // Apply the filter to the country layer
     map.current.setFilter("export-fill", filter);
+
+
   };
 
   return (
@@ -901,21 +908,9 @@ export default function Map({}: MapComponentProps) {
 
       <div className="relative h-screen w-screen">
         <div ref={mapContainer} className="absolute inset-0 h-full w-full" />
-        <button
-          onClick={highlightExportPartners}
-          className="absolute top-28 right-4 border border-emerald-500 text-white p-2 rounded w-32"
-        >
-          Export Partners
-        </button>
-        <div className="absolute top-40 right-4 border text-white w-32 p-3">
-          {exportPartners}
-        </div>
-        <button
-          onClick={highlightExportPartners}
-          className="absolute top-16 right-4 border border-emerald-500 text-white p-2 rounded w-32"
-        >
-          Import Partners
-        </button>
+  
+  
+
         {/* Other components */}
       </div>
 
@@ -954,6 +949,8 @@ export default function Map({}: MapComponentProps) {
           panelOpen={panelOpen}
           setCountryOption={setCountryOption}
           showLegend={showLegend}
+          highlightExportPartners={highlightExportPartners}
+          exportPartners={exportPartners}
         />
       </div>
     </div>
