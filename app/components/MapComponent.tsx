@@ -7,6 +7,7 @@ import Legend from "./Legend";
 import SelectCountry from "./SelectCountry";
 import SelectOption from "./SelectOption";
 import useMapSpin from "./usMapSpin";
+import { truncate } from "node:fs";
 
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || "";
 
@@ -31,44 +32,9 @@ export default function Map({}: MapComponentProps) {
 
   const [exportPartners, setExportPartners] = useState<string | null>(null);
 
-  const parseExportPartners = (exports: string): string[] => {
-    return exports
-      .split(",")
-      .map((country) => {
-        // Split by the percentage and take the first part, which is the country name
-        const countryName = country.split(/\s*\d+%/)[0].trim();
-        return countryName; // Return the full country name
-      })
-      .filter(Boolean); // Remove any empty entries
-  };
-
-  // const parseExportPartners = (exports: string): string[] => {
-  //   return exports
-  //     .split(",")
-  //     .map((country) => country.split(" ")[0].trim()) // Get the country name before the percentage
-  //     .filter(Boolean); // Remove any empty entries
-  // };
-
-  const highlightExportPartners = () => {
-    const partners = parseExportPartners(exportPartners);
-    if (!map.current || partners.length === 0) return;
-  
-    // Create a filter to highlight all partners
-    const filter = ["any", ...partners.map(country => ["==", "name", country])];
-
-    console.log("Export Partners:", partners);
-console.log("Filter being applied:", filter);
-  
-    // Apply the filter to the country layer
-    map.current.setFilter("export-fill", filter);
-  };
 
 
-
-
-
-
-  useMapSpin(map, spinEnabled);
+  //useMapSpin(map, spinEnabled);
 
   useEffect(() => {
     if (!mapContainer.current) return;
@@ -84,73 +50,57 @@ console.log("Filter being applied:", filter);
       map.current.on("load", async () => {
         await addDataLayers();
 
-        let hoveredPolygonId: string | number | null | undefined = null;
-
         map.current?.addSource("countries", {
           type: "vector",
-          url: 'mapbox://mapbox.country-boundaries-v1',
+          url: "mapbox://mapbox.country-boundaries-v1",
         });
 
-        map.current?.addLayer({
-          id: "countries",
-          type: "fill",
-          source: "countries",
-          "source-layer": "country_boundaries",
-          filter: [
-            'all',
-            ['match', ['get', 'worldview'], ['all', 'US'], true, false],
-            ["!=", "true", ["get", "disputed"]],
-        ],
-          paint: {
-           "fill-color": "#ff69b4",
-            //"fill-opacity": 0.7
-          }
-        });
-
-       
+        const WORLDVIEW = "US";
+        const worldview_filter = [
+          "all",
+          ["==", ["get", "disputed"], "false"],
+          [
+            "any",
+            ["==", "all", ["get", "worldview"]],
+            ["in", WORLDVIEW, ["get", "worldview"]],
+          ],
+        ];
 
         map.current?.addLayer({
           id: "country-fills",
           type: "fill",
           source: "countries",
           "source-layer": "country_boundaries",
-          layout: {},
-     
+          //layout: {},
+
           paint: {
             //'fill-color': '#627BC1',
             "fill-opacity": [
               "case",
-              ["boolean", ["feature-state", "hover"], false],
+              ["boolean", ["feature-state", "click"], false],
               0.3,
               0.1,
             ],
           },
+          filter: worldview_filter,
         });
 
-        map.current?.addLayer({
-          id: "country-borders",
-          type: "line",
-          source: "countries",
-          "source-layer": "country_boundaries",
-    
-          layout: {},
-          paint: {
-            "line-color": "#e0f2f1",
-            "line-width": 0.5,
-          },
-        });
+        
 
         map.current?.addLayer({
           id: "export-fill",
           type: "fill",
           source: "countries",
           "source-layer": "country_boundaries",
-    
+
           paint: {
-            //"fill-color": "blue",
+            "fill-color": "#6d28d9",
             "fill-opacity": 1,
           },
+          filter: worldview_filter,
         });
+
+        let hoveredPolygonId: string | number | null | undefined = null;
 
         map.current?.on("mousemove", "country-fills", (e) => {
           if (e.features.length > 0) {
@@ -176,6 +126,7 @@ console.log("Filter being applied:", filter);
           }
         });
 
+       
         map.current?.on("mouseleave", "country-fills", () => {
           if (hoveredPolygonId !== null) {
             map.current?.setFeatureState(
@@ -211,6 +162,61 @@ console.log("Filter being applied:", filter);
       }
     };
   }, []);
+
+
+ 
+
+
+  // const [highlightedCountryId, setHighlightedCountryId] = useState<string | null>(null);
+
+  
+
+  // useEffect(() => {
+  //   map.current?.on("click", "country-fills", (e) => {
+  //     if (e.features.length > 0) {
+  //       const clickedCountryId = e.features[0].id; // Adjust based on your feature structure
+
+  //       if (highlightedCountryId === clickedCountryId) {
+  //         // If the clicked country is already highlighted, unhighlight it
+  //         map.current?.setFeatureState(
+  //           {
+  //             source: "countries",
+  //             sourceLayer: "country_boundaries",
+  //             id: highlightedCountryId,
+  //           },
+  //           { click: false }
+  //         );
+  //         setHighlightedCountryId(null); // Reset the state
+  //       } else {
+  //         // Highlight the new country
+  //         if (highlightedCountryId) {
+  //           // Unhighlight the previously highlighted country
+  //           map.current?.setFeatureState(
+  //             {
+  //               source: "countries",
+  //               sourceLayer: "country_boundaries",
+  //               id: highlightedCountryId,
+  //             },
+  //             { click: false }
+  //           );
+  //         }
+  //         // Highlight the newly clicked country
+  //         map.current?.setFeatureState(
+  //           {
+  //             source: "countries",
+  //             sourceLayer: "country_boundaries",
+  //             id: clickedCountryId,
+  //           },
+  //           { click: true }
+  //         );
+  //         setHighlightedCountryId(clickedCountryId); // Update the state
+  //       }
+  //     }
+  //   });
+  // }, [highlightedCountryId]); // Dependency array ensures effect runs when highlightedCountryId changes
+
+
+
 
   const setupClickEvents = async () => {
     if (!map.current) return;
@@ -253,15 +259,17 @@ console.log("Filter being applied:", filter);
       if (popupRef.current) popupRef.current.remove();
 
       // Get continent key from mapping or fallback to lowercased SUBREGION
-      const continentKey = 
-      FIPS_10 == 'MX' ? "north-america" : 
-      FIPS_10 == 'RS' ? "central-asia" : 
-      FIPS_10 == 'IR' ? "middle-east" : 
-      SUBREGION
-        ? continentMapping[SUBREGION] || SUBREGION.toLowerCase()
-        : null;
+      const continentKey =
+        FIPS_10 == "MX"
+          ? "north-america"
+          : FIPS_10 == "RS"
+          ? "central-asia"
+          : FIPS_10 == "IR"
+          ? "middle-east"
+          : SUBREGION
+          ? continentMapping[SUBREGION] || SUBREGION.toLowerCase()
+          : null;
       if (!continentKey) {
-       
         console.error("Undefined continent key");
         return;
       }
@@ -282,14 +290,13 @@ console.log("Filter being applied:", filter);
       const overview = result["Economy"]?.["Economic overview"]?.["text"] || "";
       const exports =
         result["Economy"]?.["Exports - commodities"]?.["text"] || "";
-        const exportsPartners =
+      const exportsPartners =
         result["Economy"]?.["Exports - partners"]?.["text"] || "";
-        setExportPartners(exportsPartners)
+      setExportPartners(exportsPartners);
 
-  
       const imports =
         result["Economy"]?.["Imports - commodities"]?.["text"] || "";
-        const importsPartners =
+      const importsPartners =
         result["Economy"]?.["Imports - partners"]?.["text"] || "";
       const industries = result["Economy"]?.["Industries"]?.["text"] || "";
       const inflation =
@@ -327,9 +334,14 @@ console.log("Filter being applied:", filter);
 
       const infoEconomy = (
         <div className="bg-white shadow-lg rounded-lg p-4 max-w-xs border-l-4 border-amber-500 animate-fade-in transition duration-300 ease-in-out">
-        <div className="flex justify-between">
-          <h3 className="text-lg font-semibold text-gray-800">{NAME}</h3>
-          <button onClick={() => setPanelOpen(false)} className="text-gray-600 rounded-full flex items-center justify-center w-5 h-5 text-md ">x</button>
+          <div className="flex justify-between">
+            <h3 className="text-lg font-semibold text-gray-800">{NAME}</h3>
+            <button
+              onClick={() => setPanelOpen(false)}
+              className="text-gray-600 rounded-full flex items-center justify-center w-5 h-5 text-md "
+            >
+              x
+            </button>
           </div>
           <p className="text-xs font-semibold text-gray-500 mb-2">
             {SUBREGION}
@@ -372,10 +384,15 @@ console.log("Filter being applied:", filter);
 
       const infoSociety = (
         <div className="bg-white shadow-lg rounded-lg p-4 max-w-xs border-l-4 border-emerald-500 animate-fade-in transition duration-300 ease-in-out">
-           <div className="flex justify-between">
-        <h3 className="text-lg font-semibold text-gray-800">{NAME}</h3>
-        <button onClick={() => setPanelOpen(false)} className="text-gray-600 rounded-full flex items-center justify-center w-5 h-5 text-md ">x</button>
-        </div>
+          <div className="flex justify-between">
+            <h3 className="text-lg font-semibold text-gray-800">{NAME}</h3>
+            <button
+              onClick={() => setPanelOpen(false)}
+              className="text-gray-600 rounded-full flex items-center justify-center w-5 h-5 text-md "
+            >
+              x
+            </button>
+          </div>
           <p className="text-xs font-semibold text-gray-500 mb-2">
             {SUBREGION}
           </p>
@@ -405,10 +422,15 @@ console.log("Filter being applied:", filter);
 
       const infoGovernment = (
         <div className="bg-white shadow-lg rounded-lg p-4 max-w-xs border-l-4 border-emerald-500 animate-fade-in transition duration-300 ease-in-out">
-           <div className="flex justify-between">
-        <h3 className="text-lg font-semibold text-gray-800">{NAME}</h3>
-        <button onClick={() => setPanelOpen(false)} className="text-gray-600 rounded-full flex items-center justify-center w-5 h-5 text-md hover:bg-amber-500">x</button>
-        </div>
+          <div className="flex justify-between">
+            <h3 className="text-lg font-semibold text-gray-800">{NAME}</h3>
+            <button
+              onClick={() => setPanelOpen(false)}
+              className="text-gray-600 rounded-full flex items-center justify-center w-5 h-5 text-md hover:bg-amber-500"
+            >
+              x
+            </button>
+          </div>
           <p className="text-xs font-semibold text-gray-500 mb-2">
             {SUBREGION}
           </p>
@@ -443,7 +465,6 @@ console.log("Filter being applied:", filter);
       setPanelOpen(true);
     };
 
-  
     layers.forEach((layer) => {
       map.current?.on("click", layer, onLayerClick);
 
@@ -476,55 +497,16 @@ console.log("Filter being applied:", filter);
         data: countriesGeoJSON,
       });
 
-   
-
-  
-
-      map.current.addLayer({
-        id: "population-fill",
-        type: "fill",
-        source: "data",
-        paint: {
-          "fill-color": [
-            "interpolate",
-            ["linear"],
-            ["get", "POP_EST"],
-
-            0,
-            "#e0f2f1", // Light Emerald
-            10000000,
-            "#b2dfdb", // Soft Emerald
-            100000000,
-            "#4db6ac", // Emerald
-            1000000000,
-            "#e31a1c", // Dark Emerald
-          ],
-          "fill-opacity": 0.9,
-        },
-      });
-
-      map.current.addLayer({
-        id: "gdpcapita-fill",
-        type: "fill",
-        source: "data",
-        paint: {
-          "fill-color": [
-            "interpolate",
-            ["linear"],
-            ["get", "GDP_per_capita"],
-
-            0,
-            "#e0f7fa", 
-            2,
-            "#b2ebf2", 
-            20,
-            "#4dd0e1", 
-            50,
-            "#fd8d3c", 
-          ],
-          "fill-opacity": 0.6,
-        },
-      });
+      const WORLDVIEW = "US";
+      const worldview_filter = [
+        "all",
+        ["==", ["get", "disputed"], "false"],
+        [
+          "any",
+          ["==", "all", ["get", "worldview"]],
+          ["in", WORLDVIEW, ["get", "worldview"]],
+        ],
+      ];
 
       map.current.addLayer({
         id: "gdp-fill",
@@ -542,13 +524,63 @@ console.log("Filter being applied:", filter);
             1000000,
             "#F97316",
             10000000,
-            "#B91C1C",
+            "#dc2626",
           ],
-          "fill-opacity": 0.1,
+          "fill-opacity": 0.7,
         },
+        //filter: worldview_filter
       });
 
-     
+      map.current.addLayer({
+        id: "population-fill",
+        type: "fill",
+        source: "data",
+
+        paint: {
+          "fill-color": [
+            "interpolate",
+            ["linear"],
+            ["get", "POP_EST"],
+
+            0,
+            "#ede9fe", // Light Emerald
+            10000000,
+            "#c4b5fd", // Soft Emerald
+            100000000,
+            "#f472b6", // Emerald
+            1000000000,
+            "#db2777", // Emerald
+            // 1000000000,
+            // "#be185d", // Dark Emerald
+          ],
+          "fill-opacity": 0.9,
+        },
+        // filter: worldview_filter
+      });
+
+      map.current.addLayer({
+        id: "gdpcapita-fill",
+        type: "fill",
+        source: "data",
+        paint: {
+          "fill-color": [
+            "interpolate",
+            ["linear"],
+            ["get", "GDP_per_capita"],
+
+            0,
+            "#e0f7fa",
+            2,
+            "#b2ebf2",
+            20,
+            "#4dd0e1",
+            50,
+            "#fd8d3c",
+          ],
+          //"fill-opacity": 0.6,
+        },
+        //filter: worldview_filter
+      });
 
       updateLayerVisibility();
     } else {
@@ -569,13 +601,13 @@ console.log("Filter being applied:", filter);
     switch (gdpFilter) {
       case 0:
         if (map.current.getLayer("gdp-fill")) {
-          showLegend("gdp")
+          showLegend("gdp");
           map.current.setLayoutProperty("gdp-fill", "visibility", "visible");
         }
         break;
       case 1000000000000:
         if (map.current.getLayer("population-fill")) {
-         showLegend("population")
+          showLegend("population");
           map.current.setLayoutProperty(
             "population-fill",
             "visibility",
@@ -585,7 +617,7 @@ console.log("Filter being applied:", filter);
         break;
       case 3000000000000:
         if (map.current.getLayer("gdpcapita-fill")) {
-          showLegend("gdp-capita")
+          showLegend("gdp-capita");
           map.current.setLayoutProperty(
             "gdpcapita-fill",
             "visibility",
@@ -636,7 +668,231 @@ console.log("Filter being applied:", filter);
     setSpinEnabled((prev) => !prev); // Toggle spinning state
   };
 
-  console.log("exportPartners", exportPartners)
+  console.log("exportPartners", exportPartners);
+
+  const countryNameMapping: Record<string, string> = {
+    "Afghanistan": "افغانستان",
+    "Albania": "Shqipëri",
+    "Algeria": "الجزائر",
+    "Andorra": "Andorra",
+    "Angola": "Angola",
+    "Antigua and Barbuda": "Antigua e Barbuda",
+    "Argentina": "Argentina",
+    "Armenia": "Հայաստան",
+    "Australia": "Australia",
+    "Austria": "Österreich",
+    "Azerbaijan": "Azərbaycan",
+    "Bahamas": "The Bahamas",
+    "Bahrain": "البحرين",
+    "Bangladesh": "বাংলাদেশ",
+    "Barbados": "Barbados",
+    "Belarus": "Беларусь",
+    "Belgium": "België",
+    "Belize": "Belize",
+    "Benin": "Bénin",
+    "Bhutan": "འབྲུག",
+    "Bolivia": "Bolivia",
+    "Bosnia and Herzegovina": "Bosna i Hercegovina",
+    "Botswana": "Botswana",
+    "Brazil": "Brasil",
+    "Brunei": "Brunei",
+    "Bulgaria": "България",
+    "Burkina Faso": "Burkina Faso",
+    "Burundi": "Burundi",
+    "Cabo Verde": "Cabo Verde",
+    "Cambodia": "កម្ពុជា",
+    "Cameroon": "Cameroun",
+    "Canada": "Canada",
+    "Central African Republic": "République centrafricaine",
+    "Chad": "Tchad",
+    "Chile": "Chile",
+    "China": "中国",
+    "Colombia": "Colombia",
+    "Comoros": "جزر القمر",
+    "Congo, Democratic Republic of the": "République démocratique du Congo",
+    "Congo, Republic of the": "Congo",
+    "Costa Rica": "Costa Rica",
+    "Croatia": "Hrvatska",
+    "Cuba": "Cuba",
+    "Cyprus": "Κύπρος",
+    "Czech Republic": "Česká republika",
+    "Denmark": "Danmark",
+    "Djibouti": "Djibouti",
+    "Dominica": "Dominica",
+    "Dominican Republic": "República Dominicana",
+    "Ecuador": "Ecuador",
+    "Egypt": "مصر",
+    "El Salvador": "El Salvador",
+    "Equatorial Guinea": "Guinea Ecuatorial",
+    "Eritrea": "إريتريا",
+    "Estonia": "Eesti",
+    "Eswatini": "eSwatini",
+    "Ethiopia": "ኢትዮጵያ",
+    "Fiji": "Fiji",
+    "Finland": "Suomi",
+    "France": "France",
+    "Gabon": "Gabon",
+    "Gambia": "The Gambia",
+    "Georgia": "საქართველო",
+    "Germany": "Deutschland",
+    "Ghana": "Ghana",
+    "Greece": "Ελλάδα",
+    "Grenada": "Grenada",
+    "Guatemala": "Guatemala",
+    "Guinea": "Guinée",
+    "Guinea-Bissau": "Guiné-Bissau",
+    "Guyana": "Guyana",
+    "Haiti": "Haïti",
+    "Honduras": "Honduras",
+    "Hungary": "Magyarország",
+    "Iceland": "Ísland",
+    "India": "India",
+    "Indonesia": "Indonesia",
+    "Iran": "ایران",
+    "Iraq": "العراق",
+    "Ireland": "Éire",
+    "Israel": "ישראל",
+    "Italy": "Italia",
+    "Jamaica": "Jamaica",
+    "Japan": "日本",
+    "Jordan": "الأردن",
+    "Kazakhstan": "Қазақстан",
+    "Kenya": "Kenya",
+    "Kiribati": "Kiribati",
+    "Kuwait": "الكويت",
+    "Kyrgyzstan": "Кыргызстан",
+    "Laos": "ປະເທດລາວ",
+    "Latvia": "Latvija",
+    "Lebanon": "لبنان",
+    "Lesotho": "Lesotho",
+    "Liberia": "Liberia",
+    "Libya": "ليبيا",
+    "Liechtenstein": "Liechtenstein",
+    "Lithuania": "Lietuva",
+    "Luxembourg": "Luxembourg",
+    "Madagascar": "Madagasikara",
+    "Malawi": "Malawi",
+    "Malaysia": "Malaysia",
+    "Maldives": "Maldives",
+    "Mali": "Mali",
+    "Malta": "Malta",
+    "Marshall Islands": "Mărșal Insule",
+    "Mauritania": "مورتانيا",
+    "Mauritius": "Maurice",
+    "Mexico": "México",
+    "Micronesia": "Micronesia",
+    "Moldova": "Moldova",
+    "Monaco": "Monaco",
+    "Mongolia": "Монгол",
+    "Montenegro": "Crna Gora",
+    "Morocco": "المغرب",
+    "Mozambique": "Moçambique",
+    "Myanmar": "မြန်မာ",
+    "Namibia": "Namibia",
+    "Nauru": "Nauru",
+    "Nepal": "नेपाल",
+    "Netherlands": "Nederland",
+    "New Zealand": "New Zealand",
+    "Nicaragua": "Nicaragua",
+    "Niger": "Niger",
+    "Nigeria": "Nigeria",
+    "North Korea": "조선 민주주의 인민 공화국",
+    "North Macedonia": "Северна Македонија",
+    "Norway": "Norge",
+    "Oman": "عمان",
+    "Pakistan": "پاکستان",
+    "Palau": "Belau",
+    "Palestine": "فلسطين",
+    "Panama": "Panamá",
+    "Papua New Guinea": "Papua Niugini",
+    "Paraguay": "Paraguay",
+    "Peru": "Perú",
+    "Philippines": "Pilipinas",
+    "Poland": "Polska",
+    "Portugal": "Portugal",
+    "Qatar": "قطر",
+    "Romania": "România",
+    "Russia": "Россия",
+    "Rwanda": "Rwanda",
+    "Saint Kitts and Nevis": "Saint Kitts and Nevis",
+    "Saint Lucia": "Saint Lucia",
+    "Saint Vincent and the Grenadines": "Saint Vincent and the Grenadines",
+    "Samoa": "Sāmoa",
+    "San Marino": "San Marino",
+    "Saudi Arabia": "المملكة العربية السعودية",
+    "Senegal": "Sénégal",
+    "Serbia": "Србија",
+    "Seychelles": "Seychelles",
+    "Sierra Leone": "Sierra Leone",
+    "Singapore": "Singapore",
+    "Slovakia": "Slovensko",
+    "Slovenia": "Slovenija",
+    "Solomon Islands": "Solomon Islands",
+    "Somalia": "Soomaaliya",
+    "South Africa": "South Africa",
+    "South Korea": "대한민국",
+    "South Sudan": "جنوب السودان",
+    "Spain": "España",
+    "Sri Lanka": "ශ්‍රී ලංකාව",
+    "Sudan": "السودان",
+    "Suriname": "Suriname",
+    "Sweden": "Sverige",
+    "Switzerland": "Schweiz",
+    "Syria": "سوريا",
+    "Taiwan": "臺灣",
+    "Tajikistan": "Тоҷикистон",
+    "Tanzania": "Tanzania",
+    "Thailand": "ประเทศไทย",
+    "Togo": "Togo",
+    "Tonga": "Tonga",
+    "Trinidad and Tobago": "Trinidad and Tobago",
+    "Tunisia": "تونس",
+    "Turkey": "Türkiye",
+    "Turkmenistan": "Türkmenistan",
+    "Tuvalu": "Tuvalu",
+    "Uganda": "Uganda",
+    "Ukraine": "Україна",
+    "UAE": "الإمارات العربية المتحدة",
+    "UK": "United Kingdom",
+    "US": "United States",
+    "Uruguay": "Uruguay",
+    "Uzbekistan": "Oʻzbekiston",
+    "Vanuatu": "Vanuatu",
+    "Vatican City": "Città del Vaticano",
+    "Venezuela": "Venezuela",
+    "Vietnam": "Việt Nam",
+    "Yemen": "اليمن",
+    "Zambia": "Zambia",
+    "Zimbabwe": "Zimbabwe"
+  };
+
+  const parseExportPartners = (exports: string): string[] => {
+    return exports
+      .split(",")
+      .map((country) => {
+        const countryName = country.split(/\s*\d+%/)[0].trim();
+        return countryNameMapping[countryName] || countryName; // Map to the correct name or return the original
+      })
+      .filter(Boolean);
+  };
+
+
+  const highlightExportPartners = () => {
+    const partners = parseExportPartners(exportPartners);
+    if (!map.current || partners.length === 0) return;
+  
+    // Create a filter to highlight all partners
+    const filter = [
+      "any",
+      ...partners.map((country) => ["==", "name", country]),
+    ];
+  
+    console.log("Export Partners:", partners);
+    console.log("Filter being applied:", filter);
+  
+    // Apply the filter to the country layer
+    map.current.setFilter("export-fill", filter);
+  };
 
   return (
     <div className="relative h-screen w-screen">
@@ -644,15 +900,24 @@ console.log("Filter being applied:", filter);
       <div ref={mapContainer} className="absolute inset-0 h-full w-full " />
 
       <div className="relative h-screen w-screen">
-      <div ref={mapContainer} className="absolute inset-0 h-full w-full" />
-      <button onClick={highlightExportPartners} className="absolute top-28 right-4 border border-emerald-500 text-white p-2 rounded w-32">
-        Export Partners
-      </button>
-      <button onClick={highlightExportPartners} className="absolute top-16 right-4 border border-emerald-500 text-white p-2 rounded w-32">
-        Import Partners
-      </button>
-      {/* Other components */}
-    </div>
+        <div ref={mapContainer} className="absolute inset-0 h-full w-full" />
+        <button
+          onClick={highlightExportPartners}
+          className="absolute top-28 right-4 border border-emerald-500 text-white p-2 rounded w-32"
+        >
+          Export Partners
+        </button>
+        <div className="absolute top-40 right-4 border text-white w-32 p-3">
+          {exportPartners}
+        </div>
+        <button
+          onClick={highlightExportPartners}
+          className="absolute top-16 right-4 border border-emerald-500 text-white p-2 rounded w-32"
+        >
+          Import Partners
+        </button>
+        {/* Other components */}
+      </div>
 
       <button
         id="btn-spin"
@@ -662,7 +927,7 @@ console.log("Filter being applied:", filter);
         {spinEnabled ? "Pause Rotation" : "Start Rotation"}
       </button>
 
-      <Legend  />
+      <Legend />
       {panelOpen ? (
         <SelectOption
           gdpFilter={gdpFilter}
