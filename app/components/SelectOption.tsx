@@ -1,6 +1,6 @@
 import React from 'react'
 
-const SelectOption = ({gdpFilter, selectedEconomy, selectedSociety}) => {
+const SelectOption = ({gdpFilter, selectedEconomy, selectedSociety, selectedGovernment   }) => {
   return (
  
     <div
@@ -9,7 +9,7 @@ const SelectOption = ({gdpFilter, selectedEconomy, selectedSociety}) => {
   >
     
     <div className="  text-xs text-white">
-      {gdpFilter == 0 ? selectedEconomy : selectedSociety}
+      {gdpFilter == 0 ? selectedEconomy : gdpFilter == 1000000000000 ? selectedSociety : selectedGovernment}
     </div>
   </div>
  

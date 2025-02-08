@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react'
 
-const SelectCountry = ({exportPartners, map, gdpFilter, setGdpFilter, countryOption, setPanelOpen, panelOpen, setCountryOption, showLegend, highlightExportPartners}) => {
+const SelectCountry = ({setSubFilter, subFilter, exportPartners, map, gdpFilter, setGdpFilter, countryOption, setPanelOpen, panelOpen, setCountryOption, showLegend, highlightExportPartners}) => {
 
      // Handle country selection from the dropdown
   const handleCountrySelect = (event: React.ChangeEvent<HTMLSelectElement>) => {
@@ -13,11 +13,12 @@ const SelectCountry = ({exportPartners, map, gdpFilter, setGdpFilter, countryOpt
       const [lng, lat] = selectedCountry.coordinates;
       map.current?.flyTo({
         center: [lng, lat],
-        zoom: 3, // Set zoom level to 3
+        zoom: 3, 
         essential: true,
       });
       setCountryOption(selectedCountryName)
       setPanelOpen(!panelOpen)
+      
     }
   };
   console.log("countryOptionsc", countryOption);
@@ -65,17 +66,21 @@ const SelectCountry = ({exportPartners, map, gdpFilter, setGdpFilter, countryOpt
       value={gdpFilter}
       onChange={(e) => setGdpFilter(Number(e.target.value))}
     >
+        {/* <option value="Filter">Filter</option> */}
       <option value="0">Economy</option>
       <option value="1000000000000" id="population">Society</option>
-      <option value="3000000000000">GDP Per Capita</option>
+      {/* <option value="3000000000000">GDP Per Capita</option> */} 
+      <option value="3000000000000">Government</option>
+
     </select>
     <select
       className="p-2 border rounded "
-    
+    value={subFilter}
       onChange={highlightExportPartners}
     >
+       <option value="default">Sub Filter</option>
       <option value="exports">Export Partners</option>
-      <option value="imports" id="">Import Partners</option>
+      <option value="imports">Import Partners</option>
       <option value="3000000000000">GDP Per Capita</option>
     </select>
   </div>
