@@ -118,7 +118,7 @@ const Dropdowns = ({
         </select>
       </div>
       <div>
-    {  gdpFilter == 0 &&
+    {  gdpFilter == 0 && highlightedCountryId &&
         <select
           className="p-2 border rounded "
           value={subFilter}

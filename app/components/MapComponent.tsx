@@ -160,9 +160,15 @@ export default function Map({}: MapComponentProps) {
     const handleClick = (e) => {
       if (e.features.length > 0) {
         const clickedCountryId = e.features[0].id; // Adjust based on your feature structure
-
+console.log("EEE", e.features)
         if (highlightedCountryId === clickedCountryId) {
           // If the clicked country is already highlighted, unhighlight it
+          if (map.current?.getLayer("export-fill")) {
+            map.current.removeLayer("export-fill");
+          }
+          if (map.current?.getLayer("import-fill")) {
+            map.current.removeLayer("import-fill")
+          }
           setPanelOpen(false)
           map.current?.setFeatureState(
             {
@@ -251,9 +257,9 @@ export default function Map({}: MapComponentProps) {
     // Single click handler for all layers
     const onLayerClick = async (e: mapboxgl.MapLayerMouseEvent) => {
       if (!map.current || !e.features?.length) return;
-
+    // console.log("E", e.features)
       const feature = e.features[0] as mapboxgl.MapboxGeoJSONFeature;
-      const { NAME, GDP_MD, POP_EST, GDP_per_capita, FIPS_10, SUBREGION } =
+      const { NAME, GDP_MD, POP_EST, GDP_per_capita, FIPS_10, SUBREGION, REGION_UN } =
         feature.properties || {};
 
       // Remove any existing popup
@@ -275,8 +281,13 @@ export default function Map({}: MapComponentProps) {
         return;
       }
 
+      const countryCode = 
+         FIPS_10 == "-99"
+         ? "NO"
+         : FIPS_10
+
       // Build the URL and fetch data
-      const url = `https://raw.githubusercontent.com/factbook/factbook.json/refs/heads/master/${continentKey}/${FIPS_10?.toLowerCase()}.json`;
+      const url = `https://raw.githubusercontent.com/factbook/factbook.json/refs/heads/master/${continentKey}/${countryCode?.toLowerCase()}.json`;
       console.log("url", url);
       const res = await fetch(url);
       const result = await res.json();
@@ -512,22 +523,39 @@ export default function Map({}: MapComponentProps) {
           type: "fill",
           source: "data",
           paint: {
-            "fill-color": [
-              "interpolate",
-              ["linear"],
-              ["get", "GDP_MD"],
-              0,
-              "#BFDBFE",
-              100000,
-              "#38BDF8",
-              1000000,
-              "#0891B2",
-              10000000,
-              "#115E59",
-            ],
-            "fill-opacity": 1,
+              "fill-color": [
+                  "case",
+                  ["==", ["get", "SUBREGION"], "Central Asia"], "#ed5151", // Color for Asia
+                  ["==", ["get", "SUBREGION"], "Western Asia"], "#9e559c", // Color for Americas
+                  ["==", ["get", "SUBREGION"], "Southern Asia"], "#a7c636", // Color for Africa
+                  ["==", ["get", "SUBREGION"], "Eastern Asia"], "#9e559c", // Color for Oceania
+                  ["==", ["get", "SUBREGION"], "South-Eastern Asia"], "#ed5151", // Color for Oceania
+
+                  ["==", ["get", "SUBREGION"], "Middle Africa"], "#9e559c", // Color for Asia
+                  ["==", ["get", "SUBREGION"], "Western Africa"], "#a7c636", // Color for Americas
+                  ["==", ["get", "SUBREGION"], "Southern Africa"], "#a7c636", // Color for Africa
+                  ["==", ["get", "SUBREGION"], "Eastern Africa"], "#fc921f", // Color for Oceania
+                  ["==", ["get", "SUBREGION"], "Northern Africa"], "#ed5151", // Color for Africa
+
+              
+                  ["==", ["get", "SUBREGION"], "Western Europe"], "#9e559c", // Color for Americas
+                  ["==", ["get", "SUBREGION"], "Southern Europe"], "#a7c636", // Color for Africa
+                  ["==", ["get", "SUBREGION"], "Eastern Europe"], "#fc921f", // Color for Oceania
+                  ["==", ["get", "SUBREGION"], "Northern Europe"], "#ed5151", // Color for Oceania
+
+                  ["==", ["get", "SUBREGION"], "Central America"], "#9e559c", // Color for Americas
+                  ["==", ["get", "SUBREGION"], "South America"], "#a7c636", // Color for Africa
+                  ["==", ["get", "SUBREGION"], "Caribbean"], "#fc921f", // Color for Oceania
+                  ["==", ["get", "SUBREGION"], "Northern America"], "#ed5151", // Color for Oceania
+
+                  ["==", ["get", "SUBREGION"], "Australia and New Zealand"], "#fc921f", // Color for Oceania
+                  ["==", ["get", "SUBREGION"], "Melanesia"], "#ed5151", // Color for Oceania
+                 
+                  "#Ffffff" // Default color (white or any fallback color)
+              ],
+              "fill-opacity": 1,
           },
-        };
+      };
 
         const populationLayer = {
           id: "population-fill",
@@ -539,15 +567,15 @@ export default function Map({}: MapComponentProps) {
               ["linear"],
               ["get", "POP_EST"],
               0,
-              "#BFDBFE",
+              "#D1D5DB",
               10000000,
-              "#A78BFA",
+              "#FBBF24",
               100000000,
-              "#C026D3",
+              "#F97316",
               1000000000,
-              "#DB2777",
+              "#dc2626",
             ],
-            "fill-opacity": 0.9,
+            "fill-opacity": 1,
           },
         };
 
@@ -569,7 +597,7 @@ export default function Map({}: MapComponentProps) {
               10000000,
               "#dc2626",
             ],
-            "fill-opacity": 0.7,
+            "fill-opacity": 1,
           },
         };
 
@@ -592,14 +620,14 @@ export default function Map({}: MapComponentProps) {
 
         const exportLayer = {
           id: "export-fill",
-          type: "line",
+          type: "fill",
           source: "countries",
           "source-layer": "country_boundaries",
           layout: {},
           paint: {
-            "line-color": "#000",
-            "line-width": 0.5,
-            "fill-opacity": 0.7,
+            "fill-color": "#14B8A6",
+            //"line-width": 0.5,
+            "fill-opacity": 1,
           },
         };
 
@@ -609,8 +637,8 @@ export default function Map({}: MapComponentProps) {
           source: "countries",
           "source-layer": "country_boundaries",
           paint: {
-            "fill-color": "#000",
-            "fill-opacity": 0.5,
+            "fill-color": "#8B5CF6",
+            "fill-opacity": 1,
           },
         };
 
@@ -925,7 +953,7 @@ export default function Map({}: MapComponentProps) {
         "Saint Vincent and the Grenadines": "Saint Vincent and the Grenadines",
         Samoa: "Sāmoa",
         "San Marino": "San Marino",
-        "Saudi Arabia": "المملكة العربية السعودية",
+        "Saudi Arabia": "السعودية",
         Senegal: "Sénégal",
         Serbia: "Србија",
         Seychelles: "Seychelles",
