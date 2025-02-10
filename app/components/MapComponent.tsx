@@ -178,7 +178,12 @@ console.log("EEE", e.features)
             },
             { click: false } // Set to false for unhighlighting
           );
+          map.current?.flyTo({
+             zoom: 2,
+             essential: true,
+           });
           setHighlightedCountryId(null); // Reset the state
+          setSpinEnabled(true); 
         } else {
           // Unhighlight the previously highlighted country
       
@@ -193,6 +198,10 @@ console.log("EEE", e.features)
               { click: false }
             );
           }
+
+      
+         
+        
           // Highlight the newly clicked country
           
           map.current?.setFeatureState(
@@ -204,6 +213,7 @@ console.log("EEE", e.features)
             { click: true }
           );
           setHighlightedCountryId(clickedCountryId); // Update the state
+          setSpinEnabled(false); 
           setPanelOpen(true);
           if (map.current?.getLayer("export-fill")) {
             map.current.removeLayer("export-fill");
@@ -218,6 +228,7 @@ console.log("EEE", e.features)
     };
 
     map.current?.on("click", "country-fills", handleClick);
+    //setSpinEnabled((prev) => !prev); // Toggle spinning state
 
     // Cleanup function to remove event listeners
     return () => {
@@ -229,6 +240,8 @@ console.log("EEE", e.features)
     if (!map.current) return;
 
     const layers = ["gdp-fill", "population-fill", "gdpcapita-fill"];
+
+
 
     // Mapping of continent names to the required format
     const continentMapping: { [key: string]: string } = {
@@ -259,11 +272,29 @@ console.log("EEE", e.features)
       if (!map.current || !e.features?.length) return;
     // console.log("E", e.features)
       const feature = e.features[0] as mapboxgl.MapboxGeoJSONFeature;
-      const { NAME, GDP_MD, POP_EST, GDP_per_capita, FIPS_10, SUBREGION, REGION_UN } =
+      const { NAME, GDP_MD, POP_EST, GDP_per_capita, FIPS_10, SUBREGION, REGION_UN, LABEL_X, LABEL_Y } =
         feature.properties || {};
-
+        console.log("E", e.features)
       // Remove any existing popup
       if (popupRef.current) popupRef.current.remove();
+
+      const [lng, lat] = [LABEL_X, LABEL_Y];
+
+      if (feature) {
+        map.current?.flyTo({
+          center: [lng, lat],
+          zoom: 4,
+          essential: true,
+        });
+      } 
+
+ 
+  
+    
+  
+    
+
+    
 
       // Get continent key from mapping or fallback to lowercased SUBREGION
       const continentKey =
@@ -1124,9 +1155,9 @@ console.log("EEE", e.features)
       <button
         id="btn-spin"
         onClick={handleSpinButtonClick}
-        className="absolute bottom-6 right-4 bg-violet-800 text-white p-2 px-4 rounded-full"
+        className="absolute bottom-6 right-4 bg-violet-800 text-white p-2 px-4 rounded-lg"
       >
-        {spinEnabled ? "Pause Rotation" : "Start Rotation"}
+        {spinEnabled ? "Pause" : "Rotate"}
       </button>
     </div>
   );
