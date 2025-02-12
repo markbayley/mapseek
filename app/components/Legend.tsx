@@ -7,10 +7,10 @@ function Legend() {
   return (
     <div
       id="legend"
-      className="bg-white  p-2 rounded-lg absolute bottom-4 left-4 z-10 shadow-md text-xs w-80"
+      className="bg-white  p-2 rounded-lg absolute bottom-4 left-4 z-10 shadow-md text-xs w-80 border-l-4 border-amber-500"
     >
       <div id="gdp-legend" >
-        <h5 className="font-semibold pb-1">GDP</h5>
+        <h5 className="font-semibold pb-1 ">GDP</h5>
         <div className="flex items-center justify-end gap-x-2">
           <div className="bg-gray-200 h-5 w-5 inline-block rounded"></div> 
           10b <br />

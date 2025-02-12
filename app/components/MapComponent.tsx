@@ -160,16 +160,16 @@ export default function Map({}: MapComponentProps) {
     const handleClick = (e) => {
       if (e.features.length > 0) {
         const clickedCountryId = e.features[0].id; // Adjust based on your feature structure
-console.log("EEE", e.features)
+        console.log("EEE", e.features);
         if (highlightedCountryId === clickedCountryId) {
           // If the clicked country is already highlighted, unhighlight it
           if (map.current?.getLayer("export-fill")) {
             map.current.removeLayer("export-fill");
           }
           if (map.current?.getLayer("import-fill")) {
-            map.current.removeLayer("import-fill")
+            map.current.removeLayer("import-fill");
           }
-          setPanelOpen(false)
+          setPanelOpen(false);
           map.current?.setFeatureState(
             {
               source: "countries",
@@ -179,16 +179,15 @@ console.log("EEE", e.features)
             { click: false } // Set to false for unhighlighting
           );
           map.current?.flyTo({
-             zoom: 2,
-             essential: true,
-           });
+            zoom: 2,
+            essential: true,
+          });
           setHighlightedCountryId(null); // Reset the state
-          setSpinEnabled(true); 
+          setSpinEnabled(true);
         } else {
           // Unhighlight the previously highlighted country
-      
+
           if (highlightedCountryId) {
-          
             map.current?.setFeatureState(
               {
                 source: "countries",
@@ -199,11 +198,8 @@ console.log("EEE", e.features)
             );
           }
 
-      
-         
-        
           // Highlight the newly clicked country
-          
+
           map.current?.setFeatureState(
             {
               source: "countries",
@@ -213,7 +209,7 @@ console.log("EEE", e.features)
             { click: true }
           );
           setHighlightedCountryId(clickedCountryId); // Update the state
-          setSpinEnabled(false); 
+          setSpinEnabled(false);
           setPanelOpen(true);
           if (map.current?.getLayer("export-fill")) {
             map.current.removeLayer("export-fill");
@@ -240,8 +236,6 @@ console.log("EEE", e.features)
     if (!map.current) return;
 
     const layers = ["gdp-fill", "population-fill", "gdpcapita-fill"];
-
-
 
     // Mapping of continent names to the required format
     const continentMapping: { [key: string]: string } = {
@@ -270,11 +264,20 @@ console.log("EEE", e.features)
     // Single click handler for all layers
     const onLayerClick = async (e: mapboxgl.MapLayerMouseEvent) => {
       if (!map.current || !e.features?.length) return;
-    // console.log("E", e.features)
+      // console.log("E", e.features)
       const feature = e.features[0] as mapboxgl.MapboxGeoJSONFeature;
-      const { NAME, GDP_MD, POP_EST, GDP_per_capita, FIPS_10, SUBREGION, REGION_UN, LABEL_X, LABEL_Y } =
-        feature.properties || {};
-        console.log("E", e.features)
+      const {
+        NAME,
+        GDP_MD,
+        POP_EST,
+        GDP_per_capita,
+        FIPS_10,
+        SUBREGION,
+        REGION_UN,
+        LABEL_X,
+        LABEL_Y,
+      } = feature.properties || {};
+      console.log("E", e.features);
       // Remove any existing popup
       if (popupRef.current) popupRef.current.remove();
 
@@ -286,15 +289,7 @@ console.log("EEE", e.features)
           zoom: 4,
           essential: true,
         });
-      } 
-
- 
-  
-    
-  
-    
-
-    
+      }
 
       // Get continent key from mapping or fallback to lowercased SUBREGION
       const continentKey =
@@ -312,10 +307,7 @@ console.log("EEE", e.features)
         return;
       }
 
-      const countryCode = 
-         FIPS_10 == "-99"
-         ? "NO"
-         : FIPS_10
+      const countryCode = FIPS_10 == "-99" ? "NO" : FIPS_10;
 
       // Build the URL and fetch data
       const url = `https://raw.githubusercontent.com/factbook/factbook.json/refs/heads/master/${continentKey}/${countryCode?.toLowerCase()}.json`;
@@ -513,7 +505,6 @@ console.log("EEE", e.features)
       setSelectedGovernment(infoGovernment);
       setClick(title);
       setCountryOption(title);
-    
     };
 
     layers.forEach((layer) => {
@@ -554,39 +545,58 @@ console.log("EEE", e.features)
           type: "fill",
           source: "data",
           paint: {
-              "fill-color": [
-                  "case",
-                  ["==", ["get", "SUBREGION"], "Central Asia"], "#ed5151", // Color for Asia
-                  ["==", ["get", "SUBREGION"], "Western Asia"], "#9e559c", // Color for Americas
-                  ["==", ["get", "SUBREGION"], "Southern Asia"], "#a7c636", // Color for Africa
-                  ["==", ["get", "SUBREGION"], "Eastern Asia"], "#9e559c", // Color for Oceania
-                  ["==", ["get", "SUBREGION"], "South-Eastern Asia"], "#ed5151", // Color for Oceania
+            "fill-color": [
+              "case",
+              ["==", ["get", "SUBREGION"], "Central Asia"],
+              "#ed5151", // Color for Asia
+              ["==", ["get", "SUBREGION"], "Western Asia"],
+              "#9e559c", // Color for Americas
+              ["==", ["get", "SUBREGION"], "Southern Asia"],
+              "#a7c636", // Color for Africa
+              ["==", ["get", "SUBREGION"], "Eastern Asia"],
+              "#9e559c", // Color for Oceania
+              ["==", ["get", "SUBREGION"], "South-Eastern Asia"],
+              "#ed5151", // Color for Oceania
 
-                  ["==", ["get", "SUBREGION"], "Middle Africa"], "#9e559c", // Color for Asia
-                  ["==", ["get", "SUBREGION"], "Western Africa"], "#a7c636", // Color for Americas
-                  ["==", ["get", "SUBREGION"], "Southern Africa"], "#a7c636", // Color for Africa
-                  ["==", ["get", "SUBREGION"], "Eastern Africa"], "#fc921f", // Color for Oceania
-                  ["==", ["get", "SUBREGION"], "Northern Africa"], "#ed5151", // Color for Africa
+              ["==", ["get", "SUBREGION"], "Middle Africa"],
+              "#9e559c", // Color for Asia
+              ["==", ["get", "SUBREGION"], "Western Africa"],
+              "#a7c636", // Color for Americas
+              ["==", ["get", "SUBREGION"], "Southern Africa"],
+              "#a7c636", // Color for Africa
+              ["==", ["get", "SUBREGION"], "Eastern Africa"],
+              "#fc921f", // Color for Oceania
+              ["==", ["get", "SUBREGION"], "Northern Africa"],
+              "#ed5151", // Color for Africa
 
-              
-                  ["==", ["get", "SUBREGION"], "Western Europe"], "#9e559c", // Color for Americas
-                  ["==", ["get", "SUBREGION"], "Southern Europe"], "#a7c636", // Color for Africa
-                  ["==", ["get", "SUBREGION"], "Eastern Europe"], "#fc921f", // Color for Oceania
-                  ["==", ["get", "SUBREGION"], "Northern Europe"], "#ed5151", // Color for Oceania
+              ["==", ["get", "SUBREGION"], "Western Europe"],
+              "#9e559c", // Color for Americas
+              ["==", ["get", "SUBREGION"], "Southern Europe"],
+              "#a7c636", // Color for Africa
+              ["==", ["get", "SUBREGION"], "Eastern Europe"],
+              "#fc921f", // Color for Oceania
+              ["==", ["get", "SUBREGION"], "Northern Europe"],
+              "#ed5151", // Color for Oceania
 
-                  ["==", ["get", "SUBREGION"], "Central America"], "#9e559c", // Color for Americas
-                  ["==", ["get", "SUBREGION"], "South America"], "#a7c636", // Color for Africa
-                  ["==", ["get", "SUBREGION"], "Caribbean"], "#fc921f", // Color for Oceania
-                  ["==", ["get", "SUBREGION"], "Northern America"], "#ed5151", // Color for Oceania
+              ["==", ["get", "SUBREGION"], "Central America"],
+              "#9e559c", // Color for Americas
+              ["==", ["get", "SUBREGION"], "South America"],
+              "#a7c636", // Color for Africa
+              ["==", ["get", "SUBREGION"], "Caribbean"],
+              "#fc921f", // Color for Oceania
+              ["==", ["get", "SUBREGION"], "Northern America"],
+              "#ed5151", // Color for Oceania
 
-                  ["==", ["get", "SUBREGION"], "Australia and New Zealand"], "#fc921f", // Color for Oceania
-                  ["==", ["get", "SUBREGION"], "Melanesia"], "#ed5151", // Color for Oceania
-                 
-                  "#Ffffff" // Default color (white or any fallback color)
-              ],
-              "fill-opacity": 1,
+              ["==", ["get", "SUBREGION"], "Australia and New Zealand"],
+              "#fc921f", // Color for Oceania
+              ["==", ["get", "SUBREGION"], "Melanesia"],
+              "#ed5151", // Color for Oceania
+
+              "#Ffffff", // Default color (white or any fallback color)
+            ],
+            "fill-opacity": 1,
           },
-      };
+        };
 
         const populationLayer = {
           id: "population-fill",
@@ -1041,6 +1051,10 @@ console.log("EEE", e.features)
 
     if (map.current) {
       if (selectedValue === "exports") {
+        map.current?.flyTo({
+          zoom: 3,
+          essential: true,
+        });
         // Show the export-fill layer
         if (!map.current.getLayer("export-fill")) {
           map.current.addLayer(map.current.exportLayer);
@@ -1071,6 +1085,10 @@ console.log("EEE", e.features)
       }
 
       if (selectedValue === "imports") {
+        map.current?.flyTo({
+          zoom: 3,
+          essential: true,
+        });
         // Show the export-fill layer
         if (!map.current.getLayer("import-fill")) {
           map.current.addLayer(map.current.importLayer);

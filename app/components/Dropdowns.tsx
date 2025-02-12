@@ -91,6 +91,7 @@ const Dropdowns = ({
   return (
     <div className=" flex  w-full justify-between">
       <div className="space-x-5">
+        {! highlightedCountryId &&
         <select
           className="p-2 border rounded"
           onChange={handleCountrySelect}
@@ -103,6 +104,7 @@ const Dropdowns = ({
             </option>
           ))}
         </select>
+}
         <select
           className="p-2 border rounded w-36"
           value={gdpFilter}
