@@ -1,10 +1,26 @@
 import React, { useEffect } from "react";
 
-const Dropdowns = ({
+interface DropdownsProps {
+  setHighlightedCountryId: (id: string | null) => void;
+  highlightedCountryId: string | null;
+  activeOverlays: { [key: string]: boolean };
+  setActiveOverlays: (overlays: { [key: string]: boolean }) => void;
+  exportPartners: string | null;
+  map: any; // Use a more specific type if available (e.g., mapboxgl.Map)
+  gdpFilter: number;
+  setGdpFilter: (filter: number) => void;
+  countryOption: string;
+  setPanelOpen: (open: boolean) => void;
+  panelOpen: boolean;
+  setCountryOption: (option: string) => void;
+  highlightExportPartners: (event: React.ChangeEvent<HTMLSelectElement>) => void; // Although this will be removed, keep type for now
+}
+
+const Dropdowns: React.FC<DropdownsProps> = ({
   setHighlightedCountryId,
   highlightedCountryId,
-  setSubFilter,
-  subFilter,
+  activeOverlays,
+  setActiveOverlays,
   exportPartners,
   map,
   gdpFilter,
@@ -56,7 +72,7 @@ const Dropdowns = ({
 
       // Update state
       setCountryOption(selectedCountryName);
-      setHighlightedCountryId(selectedCountry); // Set the highlighted country ID
+      setHighlightedCountryId(selectedCountry.name); // Set the highlighted country ID using the name
       setPanelOpen(!panelOpen);
     }
   };
@@ -120,18 +136,37 @@ const Dropdowns = ({
         </select>
       </div>
       <div>
-    {  gdpFilter == 0 && highlightedCountryId &&
-        <select
-          className="p-2 border rounded "
-          value={subFilter}
-          onChange={highlightExportPartners}
-        >
-          <option value="default">Sub Filter</option>
-          <option value="exports">Export Partners</option>
-          <option value="imports">Import Partners</option>
-          <option value="3000000000000">GDP Per Capita</option>
-        </select>
-}
+        {gdpFilter == 0 && highlightedCountryId && (
+          <div className="flex gap-4 items-center bg-white rounded-lg p-3 shadow">
+            <label className="flex items-center gap-1">
+              <input
+                type="radio"
+                name="overlay"
+                checked={!!activeOverlays.exports}
+                onChange={() => setActiveOverlays({ exports: true, imports: false, Resources: false })}
+              />
+              Exports
+            </label>
+            <label className="flex items-center gap-1">
+              <input
+                type="radio"
+                name="overlay"
+                checked={!!activeOverlays.imports}
+                onChange={() => setActiveOverlays({ exports: false, imports: true, Resources: false })}
+              />
+              Imports
+            </label>
+            <label className="flex items-center gap-1">
+              <input
+                type="radio"
+                name="overlay"
+                checked={!!activeOverlays["Resources"]}
+                onChange={() => setActiveOverlays({ exports: false, imports: false, Resources: true })}
+              />
+              Resources
+            </label>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -54,6 +54,37 @@ function Legend() {
           <div className="bg-blue-600 h-5 w-5 inline-block rounded"></div> 50k+
         </div>
       </div>
+
+      {/* Mineral Legend */}
+      <div id="mineral-legend" className="mt-4">
+        <h5 className="font-semibold pb-1">Critical Minerals</h5>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <span className="flex items-center gap-x-1">
+            <span style={{ color: '#a78bfa', fontSize: '1.3em' }}>{/* REE */}<span className="inline-block align-middle">REE</span></span>
+            <span className="text-xs text-gray-700">Rare Earths</span>
+          </span>
+          <span className="flex items-center gap-x-1">
+            <span style={{ color: '#222', fontSize: '1.3em' }}>Mn</span>
+            <span className="text-xs text-gray-700">Manganese</span>
+          </span>
+          <span className="flex items-center gap-x-1">
+            <span style={{ color: '#888', fontSize: '1.3em' }}>Ni</span>
+            <span className="text-xs text-gray-700">Nickel</span>
+          </span>
+          <span className="flex items-center gap-x-1">
+            <span style={{ color: '#fb923c', fontSize: '1.3em' }}>Cu</span>
+            <span className="text-xs text-gray-700">Copper</span>
+          </span>
+          <span className="flex items-center gap-x-1">
+            <span style={{ color: '#22d3ee', fontSize: '1.3em' }}>Co</span>
+            <span className="text-xs text-gray-700">Cobalt</span>
+          </span>
+          <span className="flex items-center gap-x-1">
+            <span style={{ color: '#a3e635', fontSize: '1.3em' }}>Li</span>
+            <span className="text-xs text-gray-700">Lithium</span>
+          </span>
+        </div>
+      </div>
     </div>
   );
 }
