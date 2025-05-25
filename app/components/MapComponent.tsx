@@ -23,6 +23,40 @@ import type { Feature, Point } from 'geojson'; // Import turf types
 import { GiMinerals, GiStoneBlock } from 'react-icons/gi';
 import { TbHexagonLetterR, TbHexagonLetterM, TbHexagonLetterN, TbHexagonLetterC, TbHexagonLetterL } from 'react-icons/tb';
 import { TbHexagonLetterU } from 'react-icons/tb';
+import { useArcAnimation } from "../hooks/ArcAnimation";
+import { useMineralOverlay } from "../hooks/useMineralOverlay";
+import {
+  topCopperProducers,
+  topNickelProducers,
+  topManganeseProducers,
+  topLithiumProducers,
+  topUraniumProducers,
+  topREEProducers,
+  topCoalProducers,
+  topGasProducers,
+  topPetroleumProducers,
+  topCobaltProducers,
+  topDiamondProducers,
+  topGoldProducers,
+  topAluminiumProducers,
+  topIronOreProducers,
+  topSilverProducers,
+  formatProduction,
+  formatCoal,
+  formatGas,
+  formatPetroleum,
+  formatCobalt,
+  formatDiamond,
+  formatGold,
+  formatAluminium,
+  formatIronOre,
+  formatSilver
+} from "../utils/mineralOverlayData";
+import { iconMap } from '../utils/iconMap';
+import { exportChartColors, importChartColors } from '../utils/chartColors';
+import { countryNameMapping } from '../utils/countryNameMapping';
+import { FaGear } from 'react-icons/fa6';
+import { IconType } from 'react-icons';
 
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || "";
 
@@ -30,349 +64,6 @@ interface MapComponentProps {
   searchTerm: string;
   gdpFilter: number;
 }
-
-// Icon mapping for export types (info panel colors)
-const iconMap = {
-  petroleum: { component: <FaOilWell />, name: "petroleum", color: "#334155" },
-  crude: { component: <MdOilBarrel />, name: "crude", color: "#334155" },
-  oil: { component: <FaOilCan />, name: "oil", color: "#eab308" },
-  gas: { component: <FaFire />, name: "gas", color: "#52525b" },
-  coal: { component: <BsMinecartLoaded />, name: "coal", color: "#78716c" },
-  cars: { component: <FaCar />, name: "cars", color: "#f87171" },
-  iron: { component: <GiMetalBar />, name: "iron", color: "#6B7280" },
-  steel: { component: <FaIndustry />, name: "steel", color: "#6B7280" },
-  machinery: { component: <FaIndustry />, name: "machinery", color: "#6B7280" },
-  wheat: { component: <FaSeedling />, name: "wheat", color: "#facc15" },
-  grain: { component: <FaSeedling />, name: "grain", color: "#fde047" },
-  gold: { component: <GiMetalBar  />, name: "gold", color: "#facc15" },
-  silver: { component: <GiMetalBar  />, name: "silver", color: "#E5E7EB" },
-  copper: { component: <GiMetalBar  />, name: "copper", color: "#FB923C" },
-  zinc: { component: <GiGoldMine />, name: "zinc", color: "#94A3B8" },
-  metal: { component: <GiGoldMine />, name: "metal", color: "#6B7280" },
-  minerals: { component: <GiGoldMine />, name: "minerals", color: "#9CA3AF" },
-  diamonds: { component: <FaGem />, name: "diamonds", color: "#bfdbfe" },
-  gems: { component: <FaGem />, name: "gems", color: "#3B82F6" },
-  vehicles: { component: <FaCar />, name: "vehicles", color: "#EF4444" },
-  ships: { component: <FaShip />, name: "ships", color: "#ef4444" },
-  aircraft: { component: <FaPlane />, name: "aircraft", color: "#fca5a5" },
-  transport: { component: <FaTruck />, name: "transport", color: "#374151" },
-  fertilizers: { component: <FaSeedling />, name: "fertilizers", color: "#4D7C0F" },
-  milk: { component: <LuMilk />, name: "milk", color: "#fdba74" },
-  beef: { component: <LuBeef />, name: "beef", color: "#fdba74" },
-  soybeans: { component: <LuBean />, name: "soybeans", color: "#B5DE8C" },
-  soy: { component: <LuBean />, name: "soy", color: "#B5DE8C" },
-  coffee: { component: <FaCoffee />, name: "coffee", color: "#ca8a04" },
-  wood: { component: <GiWoodPile />, name: "wood", color: "#059669" },
-  paper: { component: <GiWoodPile />, name: "paper", color: "#059669" },
-  pulp: { component: <GiWoodPile />, name: "pulp", color: "#059669" },
-  trucks: { component: <FaTruck />, name: "trucks", color: "#fb7185" },
-  electronics: { component: <FaLaptop />, name: "electronics", color: "#0d9488" },
-  broadcast: { component: <FaTowerBroadcast />, name: "broadcast", color: "#14b8a6" },
-  computers: { component: <FaLaptop />, name: "computers", color: "#2dd4bf" },
-  phones: { component: <FaMobile />, name: "phones", color: "#2dd4bf" },
-  circuits: { component: <FaMicrochip />, name: "circuits", color: "#14b8a6" },
-  parts: { component: <FaGears />, name: "parts", color: "#f87171" },
-  garments: { component: <FaTshirt />, name: "garments", color: "#d8b4fe" },
-  clothing: { component: <FaTshirt />, name: "clothing", color: "#d8b4fe" },
-  fruits: { component: <FaAppleAlt />, name: "fruits", color: "#84CC16" },
-  corn: { component: <GiCorn />, name: "corn", color: "#fde047" },
-  maize: { component: <GiCorn />, name: "maize", color: "#fde047" },
-  medicine: { component: <GiMedicines />, name: "medicine", color: "#818cf8" },
-  plastics: { component: <FaSheetPlastic />, name: "plastics", color: "#d8b4fe" },
-  fish: { component: <GiDoubleFish />, name: "fish", color: "#7dd3fc" },
-  shellfish: { component: <GiBeetleShell />, name: "shellfish", color: "#93c5fd" },
-  REE: { component: <TbHexagonLetterR />, name: "REE", color: "#fca5a5" },
-  Mn: { component: <TbHexagonLetterM />, name: "Mn", color: "#B5DE8C" },
-  Ni: { component: <TbHexagonLetterN />, name: "Ni", color: "#d8b4fe" },
-  Cu: { component: <TbHexagonLetterC />, name: "Cu", color: "#fdba74" },
-  Co: { component: <GiMinerals />, name: "Co", color: "#a5b4fc" },
-  Li: { component: <TbHexagonLetterL />, name: "Li", color: "#c7d2fe" },
-  U: { component: <TbHexagonLetterU />, name: "U", color: "#fcd34d" },
-  turbines: { component: <GiTurbine />, name: "turbines", color: "#60a5fa" },
-  wire: { component: <GiWireCoil />, name: "wire", color: "#fbbf24" },
-  electrical: { component: <GiWireCoil />, name: "electrical", color: "#fbbf24" },
-  electricity: { component: <GiWireCoil />, name: "electricity", color: "#fbbf24" },
-  equipment: { component: <GiWireCoil />, name: "equipment", color: "#fbbf24" },
-  appliances: { component: <GiWireCoil />, name: "appliances", color: "#fbbf24" },
-  rice: { component: <GiBowlOfRice />, name: "rice", color: "#fde68a" },
-  sugar: { component: <GiSugarCane />, name: "sugar", color: "#f9fafb" },
-  spice: { component: <GiSugarCane />, name: "spice", color: "#f9fafb" },
-  nuts: { component: <GiSugarCane />, name: "nuts", color: "#f9fafb" },
-  sheep: { component: <GiSheep />, name: "sheep", color: "#a3e635" },
-  butter: { component: <GiButter />, name: "butter", color: "#fde68a" },
-  beer: { component: <GiBeerStein />, name: "beer", color: "#fbbf24" },
-  liquor: { component: <GiBeerStein />, name: "liquor", color: "#fbbf24" },
-  alcohols: { component: <GiBeerStein />, name: "alcohols", color: "#fbbf24" },
-  cocoa: { component: <GiCoconuts />, name: "cocoa", color: "#a3e635" },
-  coconuts: { component: <GiCoconuts />, name: "coconuts", color: "#a3e635" },
-  bananas: { component: <GiBananaBunch />, name: "bananas", color: "#fde047" },
-  jewelry: { component: <GiPearlNecklace />, name: "jewelry", color: "#f472b6" },
-  tobacco: { component: <GiCigarette />, name: "tobacco", color: "#fbbf24" },
-  rubber: { component: <GiRubberBoot />, name: "rubber", color: "#a3e635" },
-  tires: { component: <GiRubberBoot />, name: "tires", color: "#a3e635" },
-  footwear: { component: <GiRubberBoot />, name: "footwear", color: "#a3e635" },
-  chemicals: { component: <GiChemicalDrop />, name: "chemicals", color: "#818cf8" },
-  phosphates: { component: <GiChemicalDrop />, name: "phosphates", color: "#818cf8" },
-  acids: { component: <GiChemicalDrop />, name: "acids", color: "#818cf8" },
-  pesticides: { component: <GiChemicalDrop />, name: "pesticides", color: "#818cf8" },
-  nitrogen: { component: <GiChemicalDrop />, name: "nitrogen", color: "#818cf8" },
-  carbonates: { component: <GiChemicalDrop />, name: "carbonates", color: "#818cf8" },
-  ore: { component: <GiOre />, name: "ore", color: "#6b7280" },
-  ores: { component: <GiOre />, name: "ores", color: "#6b7280" },
-  lignite: { component: <GiOre />, name: "lignite", color: "#6b7280" },
-  aluminum: { component: <GiOre />, name: "aluminum", color: "#6b7280" },
-  aluminium: { component: <GiMetalBar />, name: "aluminium", color: "#6b7280" },
-  cement: { component: <GiOre />, name: "cement", color: "#6b7280" },
-  nickel: { component: <GiOre />, name: "nickel", color: "#6b7280" },
-};
-
-// Color palettes for charts - keep in sync with chart components
-const exportChartColors = [
-  '#ef4444', // blue-500
-  '#f87171', // red-500
-  '#fca5a5', // amber-500
-  '#fecaca', // emerald-500
-  '#fee2e2', // indigo-500
-  '#EC4899', // pink-500
-  '#8B5CF6', // violet-500
-  '#14B8A6', // teal-500
-  '#F97316', // orange-500
-  '#84CC16', // lime-500
-];
-
-const importChartColors = [
-  '#059669', // violet-500
-  '#10b981', // orange-500
-  '#34d399', // emerald-500
-  '#6ee7b7', // blue-500
-  '#a7f3d0', // pink-500
-  '#EF4444', // red-500 
-  '#14B8A6', // teal-500
-  '#F59E0B', // amber-500
-  '#6366F1', // indigo-500
-  '#84CC16', // lime-500
-];
-
-// Mapping of country names from Factbook to GeoJSON
-const countryNameMapping: Record<string, string> = {
-  Afghanistan: "Afghanistan",
-  Albania: "Albania",
-  Algeria: "Algeria",
-  Andorra: "Andorra",
-  Angola: "Angola",
-  "Antigua and Barbuda": "Antigua and Barbuda",
-  Argentina: "Argentina",
-  Armenia: "Armenia",
-  Australia: "Australia",
-  Austria: "Austria",
-  Azerbaijan: "Azerbaijan",
-  Bahamas: "The Bahamas", // Corrected mapping
-  Bahrain: "البحرين", // Added mapping
-  Bangladesh: "বাংলাদেশ", // Added mapping
-  Barbados: "Barbados",
-  Belarus: "Беларусь", // Added mapping
-  Belgium: "België", // Corrected mapping
-  Belize: "Belize",
-  Benin: "Bénin", // Added mapping
-  Bhutan: "འབྲུག", // Added mapping
-  Bolivia: "Bolivia",
-  "Bosnia and Herzegovina": "Bosna i Hercegovina", // Added mapping
-  Botswana: "Botswana",
-  Brazil: "Brasil", // Corrected mapping
-  Brunei: "Brunei",
-  Bulgaria: "България", // Added mapping
-  "Burkina Faso": "Burkina Faso",
-  Burundi: "Burundi",
-  "Cabo Verde": "Cabo Verde",
-  Cambodia: "កម្ពុជា", // Added mapping
-  Cameroon: "Cameroun", // Added mapping
-  Canada: "Canada",
-  "Central African Republic": "République centrafricaine", // Added mapping
-  Chad: "Tchad", // Added mapping
-  Chile: "Chile",
-  China: "中国", // Corrected mapping
-  Colombia: "Colombia",
-  Comoros: "جزر القمر", // Added mapping
-  "Congo, Democratic Republic of the": "Dem. Rep. Congo",
-  "Congo, Republic of the": "Congo",
-  "Costa Rica": "Costa Rica",
-  "Côte d'Ivoire": "Côte d'Ivoire",
-  Croatia: "Hrvatska", // Added mapping
-  Cuba: "Cuba",
-  Cyprus: "Κύπρος", // Added mapping
-  Czechia: "Česká republika", // Added mapping
-  Denmark: "Danmark", // Added mapping
-  Djibouti: "Djibouti",
-  Dominica: "Dominica",
-  "Dominican Republic": "Dominican Rep.",
-  Ecuador: "Ecuador",
-  Egypt: "مصر", // Corrected mapping
-  "El Salvador": "El Salvador",
-  "Equatorial Guinea": "Guinea Ecuatorial", // Added mapping
-  Eritrea: "إريتريا", // Added mapping
-  Estonia: "Eesti", // Corrected mapping
-  Eswatini: "eSwatini", // Added mapping
-  Ethiopia: "ኢትዮጵያ", // Added mapping
-  Fiji: "Fiji",
-  Finland: "Suomi", // Added mapping
-  France: "France",
-  Gabon: "Gabon",
-  Gambia: "The Gambia", // Added mapping
-  Georgia: "საქართველო", // Added mapping
-  Germany: "Deutschland", // Corrected mapping
-  Ghana: "Ghana",
-  Greece: "Ελλάδα", // Corrected mapping
-  Grenada: "Grenada",
-  Guatemala: "Guatemala",
-  Guinea: "Guinée", // Corrected mapping
-  "Guinea-Bissau": "Guiné-Bissau", // Added mapping
-  Guyana: "Guyana",
-  Haiti: "Haïti", // Added mapping
-  Honduras: "Honduras",
-  Hungary: "Magyarország", // Corrected mapping
-  Iceland: "Ísland", // Corrected mapping
-  India: "India",
-  Indonesia: "Indonesia",
-  Iran: "ایران", // Added mapping
-  Iraq: "العراق", // Corrected mapping
-  Ireland: "Éire", // Corrected mapping
-  Israel: "ישראל", // Added mapping
-  Italy: "Italia", // Corrected mapping
-  Jamaica: "Jamaica",
-  Japan: "日本", // Corrected mapping
-  Jordan: "الأردن", // Added mapping
-  Kazakhstan: "Қазақстан", // Added mapping
-  Kenya: "Kenya",
-  Kiribati: "Kiribati",
-  Kuwait: "الكويت", // Added mapping
-  Kyrgyzstan: "Кыргызстан", // Added mapping
-  Laos: "ປະເທດລາວ", // Added mapping
-  Latvia: "Latvija", // Corrected Latvia mapping
-  Lebanon: "لبنان", // Corrected mapping
-  Lesotho: "Lesotho",
-  Liberia: "Liberia",
-  Libya: "ليبيا", // Added mapping
-  Liechtenstein: "Liechtenstein",
-  Lithuania: "Lietuva", // Corrected mapping
-  Luxembourg: "Luxembourg",
-  Madagascar: "Madagasikara", // Added mapping
-  Malawi: "Malawi",
-  Malaysia: "Malaysia",
-  Maldives: "Maldives",
-  Mali: "Mali",
-  Malta: "Malta",
-  "Marshall Islands": "Mărșal Insule", // Added mapping
-  Mauritania: "مورتانيا", // Added mapping
-  Mauritius: "Maurice", // Corrected mapping
-  Mexico: "México", // Added mapping
-  Micronesia: "Micronesia",
-  Moldova: "Moldova",
-  Monaco: "Monaco",
-  Mongolia: "Монгол", // Added mapping
-  Montenegro: "Montenegro",
-  Morocco: "المغرب", // Added mapping
-  Mozambique: "Moçambique", // Corrected mapping
-  Myanmar: "မြန်မာ", // Added mapping
-  Namibia: "Namibia",
-  Nauru: "Nauru",
-  Nepal: "नेपाल", // Added mapping
-  Netherlands: "Nederland", // Corrected mapping
-  NZ: "New Zealand",
-  Nicaragua: "Nicaragua",
-  Niger: "Niger",
-  Nigeria: "Nigeria",
-  "North Korea": "조선 민주주의 인민 공화국", // Added mapping
-  "North Macedonia": "Северна Македонија", // Added mapping
-  Norway: "Norge", // Added mapping
-  Oman: "عمان", // Added mapping
-  Pakistan: "پاکستان", // Added mapping
-  Palau: "Belau", // Added mapping
-  Palestine: "فلسطين", // Added mapping
-  Panamá: "Panamá",
-  "Papua New Guinea": "Papua Niugini", // Added mapping
-  Paraguay: "Paraguay",
-  Peru: "Perú", // Added mapping
-  Philipines: "Philippines",
-  Poland: "Polska", // Added mapping
-  Portugal: "Portugal",
-  Qatar: "قطر", // Added mapping
-  Romania: "România", // Added mapping
-  Russia: "Россия", // Corrected mapping
-  Rwanda: "Rwanda",
-  "Saint Kitts and Nevis": "Saint Kitts and Nevis", // Added mapping
-  "Saint Lucia": "Saint Lucia", // Added mapping
-  "Saint Vincent and the Grenadines": "Saint Vincent and the Grenadines", // Added mapping
-  Samoa: "Sāmoa", // Added mapping
-  "San Marino": "San Marino",
-  "Saudi Arabia": "السعودية", // Corrected mapping
-  Senegal: "Sénégal", // Corrected mapping
-  Serbia: "Србија", // Added mapping
-  Seychelles: "Seychelles",
-  "Sierra Leone": "Sierra Leone",
-  Singapore: "Singapore", // Ensuring this mapping exists
-  Slovakia: "Slovensko", // Added mapping
-  Slovenia: "Slovenija", // Added mapping
-  "Solomon Islands": "Solomon Is.",
-  Somalia: "Soomaaliya", // Added mapping
-  "South Africa": "South Africa",
-  "S. Korea": "대한민국", // Corrected mapping
-  "South Sudan": "South Sudan",
-  Spain: "España", // Corrected mapping
-  "Sri Lanka": "ශ්‍රී ලංකාව", // Added mapping
-  Sudan: "السودان", // Added mapping
-  Suriname: "Suriname",
-  Sweden: "Sverige", // Corrected mapping
-  Switzerland: "Switzerland",
-  Syria: "سوريا", // Added mapping
-  Taiwan: "臺灣", // Corrected mapping
-  Tajikistan: "Тоҷикистон", // Added mapping
-  Tanzania: "Tanzania",
-  Thailand: "ประเทศไทย", // Corrected mapping
-  Togo: "Togo",
-  Tonga: "Tonga",
-  "Trinidad &amp; Tobago": "Trinidad and Tobago",
-  Tunisia: "تونس", // Added mapping
-  Turkey: "Türkiye", // Corrected mapping
-  Turkmenistan: "Türkmenistan", // Corrected mapping
-  Tuvalu: "Tuvalu",
-  Uganda: "Uganda",
-  Ukraine: "Україна", // Added mapping
-  UAE: "الإمارات العربية المتحدة", // Corrected mapping
-  UK: "United Kingdom",
-  USA: "United States", // Corrected mapping based on GeoJSON
-  "United States": "United States of America", // Added mapping for factbook name
-  Uruguay: "Uruguay",
-  Uzbekistan: "Oʻzbekiston", // Corrected mapping
-  Vanuatu: "Vanuatu",
-  "Vatican City": "Vatican",
-  Venezuela: "Venezuela",
-  Vietnam: "Vietnam",
-  Yemen: "Yemen",
-  Zambia: "Zambia",
-  Zimbabwe: "Zimbabwe",
-  // Added mappings for names seen in logs that were not in the parseExportPartners map or needed correction
-  "Deutschland": "Germany",
-  "Italia": "Italy",
-  "België": "Belgium",
-  "España": "Spain",
-  "الإمارات العربية المتحدة": "United Arab Emirates",
-  "العراق": "Iraq",
-  "中国": "China",
-  "Magyarország": "Hungary",
-  "السعودية": "Saudi Arabia",
-  "لبنان": "Lebanon",
-  "Türkiye": "Turkey",
-  "مصر": "Egypt",
-  "대한민국": "South Korea",
-  "日本": "Japan",
-  "ประเทศไทย": "Thailand",
-  "臺灣": "Taiwan",
-  "Россия": "Russia",
-  "Ελλάδα": "Greece",
-  "Sverige": "Sweden",
-  "Nederland": "Netherlands", // Corrected mapping
-  "Hong Kong": "Hong Kong S.A.R.", // Added mapping
-};
 
 // Generate arc from start point to the end point.
 // The segments parameter tell us how many
@@ -446,6 +137,7 @@ export default function Map({}: MapComponentProps) {
   const animatedPointIds = useRef<Set<string>>(new Set()); // Track all active animated point IDs
   const currentAnimationContext = useRef<string>(''); // Track the current animation context (country+filter)
   const animationFrameIds = useRef<number[]>([]); // Track animation frame IDs for cancellation
+  const [mapReady, setMapReady] = useState(false);
 
   // Generate a unique context key for the current country and filter
   // This allows us to track which animations belong to the current context
@@ -636,16 +328,21 @@ export default function Map({}: MapComponentProps) {
         container: mapContainer.current!,
         style: "mapbox://styles/mapbox/light-v11",
         center: [20, 40],
-        zoom: 2,
+        zoom: 2, 
+        
+      });
+      console.log('[MapComponent] Initializing Mapbox map');
+      // Listen for styledata to set mapReady
+      map.current.on("styledata", () => {
+        setMapReady(true);
       });
 
       map.current.on("load", async () => {
         await addDataLayers();
-
         setSpinEnabled(true);
         setupClickEvents();
-        //setupHoverEvents();
         updateLayerVisibility();
+        // Do NOT set mapReady here, set it in styledata
       });
     };
 
@@ -657,93 +354,6 @@ export default function Map({}: MapComponentProps) {
       }
     };
   }, []);
-
-
-
-
-
-  // const setupHoverEvents = () => {
-  //   let hoveredPolygonId: string | null = null;
-
-  //   map.current?.on("mousemove", "country-fills", (e) => {
-  //     if (e.features.length > 0) {
-  //       if (hoveredPolygonId !== null) {
-  //         map.current.setFeatureState(
-  //           { source: "data", id: hoveredPolygonId },
-  //           { hover: false }
-  //         );
-  //       }
-  //       hoveredPolygonId = e.features[0].id;
-  //       map.current.setFeatureState(
-  //         { source: "data", id: hoveredPolygonId },
-  //         { hover: true }
-  //       );
-  //     } else {
-  //       // Reset if no features are found
-  //       if (hoveredPolygonId !== null) {
-  //         map.current.setFeatureState(
-  //           { source: "data", id: hoveredPolygonId },
-  //           { hover: false }
-  //         );
-  //         hoveredPolygonId = null;
-  //       }
-  //     }
-  //   });
-
-  //   map.current.on("mouseleave", "country-fills", () => {
-  //     if (hoveredPolygonId !== null) {
-  //       map.current.setFeatureState(
-  //         { source: "data", id: hoveredPolygonId },
-  //         { hover: false }
-  //       );
-  //     }
-  //     hoveredPolygonId = null;
-  //   });
-  // };
-
-  //  const handleMouseMove = (e) => {
-  //     if (e.features.length > 0) {
-  //         const clickedCountryId = e.features[0].id; // Adjust based on your feature structure
-
-  //         if (highlightedCountryId === clickedCountryId) {
-  //             // If the clicked country is already highlighted, unhighlight it
-  //             map.current?.setFeatureState(
-  //                 {
-  //                     source: "countries",
-  //                     sourceLayer: "country_boundaries",
-  //                     id: highlightedCountryId,
-  //                 },
-  //                 { click: false } // Set to false for unhighlighting
-  //             );
-  //             setHighlightedCountryId(null); // Reset the state
-  //         } else {
-  //             // Unhighlight the previously highlighted country
-  //             if (highlightedCountryId) {
-  //                 map.current?.setFeatureState(
-  //                     {
-  //                         source: "countries",
-  //                         sourceLayer: "country_boundaries",
-  //                         id: highlightedCountryId,
-  //                     },
-  //                     { click: false }
-  //                 );
-  //             }
-  //             // Highlight the newly clicked country
-  //             map.current?.setFeatureState(
-  //                 {
-  //                     source: "countries",
-  //                     sourceLayer: "country_boundaries",
-  //                     id: clickedCountryId,
-  //                 },
-  //                 { click: true }
-  //             );
-  //             setHighlightedCountryId(clickedCountryId); // Update the state
-  //         }
-  //     }
-  // };
-
-  //  map.current?.on("mousemove", "country-fills", handleMouseMove);
-  // map.current?.off("mousemove", "country-fills", handleMouseMove);
 
   useEffect(() => {
     const handleClick = (e: mapboxgl.MapLayerMouseEvent) => {
@@ -876,7 +486,7 @@ export default function Map({}: MapComponentProps) {
             zoom: 4,
             essential: true,
           });
-          
+        
           // Store the selected country center for icon positioning
           setSelectedCountryCenter(coordinates);
           
@@ -1001,7 +611,7 @@ export default function Map({}: MapComponentProps) {
       
       // Store the coordinates for icon positioning
       setSelectedCountryCenter(coordinates);
-
+     
       if (feature) {
         // Directly call flyTo without requestAnimationFrame
         console.log("Flying to coordinates:", coordinates);
@@ -1012,7 +622,7 @@ export default function Map({}: MapComponentProps) {
           essential: true,
         });
       }
-
+      
       // Get continent key from mapping or fallback to lowercased SUBREGION
       const continentKey =
         FIPS_10 == "MX"
@@ -1078,6 +688,12 @@ export default function Map({}: MapComponentProps) {
       const debt =
         result["Economy"]?.["Public debt"]?.["Public debt 2023"]?.["text"] ||
         "";
+        const resources =
+        result["Geography"]?.["Natural resources"]?.["text"] ||
+        "";
+     
+      const gdpcapita = GDP_per_capita ? GDP_per_capita.toFixed(1) : "N/A"
+       
 
       const introduction =
         result["Introduction"]?.["Background"]?.["text"] || "";
@@ -1110,7 +726,7 @@ export default function Map({}: MapComponentProps) {
         result["Government"]?.["Capital"]?.["name"]?.["text"] || "";
 
       console.log("Generated economy info for:", NAME);
-      const infoEconomy = [title , overview, unemployment, debt, inflation, industries]
+      const infoEconomy = [title , overview, unemployment, debt, inflation, gdpcapita, industries, resources]
       // (
       //   <div className="bg-white shadow-lg rounded-lg p-4 max-w-xs border-l-4 border-amber-500 animate-fade-in transition duration-300 ease-in-out">
       //     <div className="flex justify-between">
@@ -1411,11 +1027,11 @@ export default function Map({}: MapComponentProps) {
         map.current.addLayer(gdpLayer);
 
         map.current?.setFog({
-          color: "rgb(186, 210, 235)", // Lower atmosphere
-          "high-color": "rgb(36, 92, 223)", // Upper atmosphere
-          "horizon-blend": 0.001, // Atmosphere thickness
-          "space-color": "rgb(11, 11, 25)", // Background color
-          "star-intensity": 0.1, // Background star brightness
+          color: "rgb(186, 210, 235)",
+          "high-color": "rgb(36, 92, 223)",
+          "horizon-blend": 0.001,
+          "space-color": "rgb(11, 11, 25)",
+          "star-intensity": 0.1,
         });
 
         map.current?.addSource("countries", {
@@ -1768,7 +1384,17 @@ export default function Map({}: MapComponentProps) {
   // Add all icons to Mapbox on map load
   useEffect(() => {
     if (!map.current) return;
-    const iconsToAdd = Object.values(iconMap);
+    const iconsToAdd = Object.values(iconMap).map(icon => ({
+      component: icon.component,
+      name: icon.name,
+      color: icon.color,
+    }));
+    Object.entries(iconMap).forEach(([key, val]) => {
+      if (!val.component || typeof val.component !== 'function') {
+        console.error('Missing or invalid icon component for:', key, val);
+      }
+    });
+ 
     addReactIconsToMapbox(map.current, iconsToAdd);
   }, []);
 
@@ -1796,6 +1422,20 @@ export default function Map({}: MapComponentProps) {
     } else if (activeOverlays.exports) {
       console.log("Using export icons for InfoPanel:", exportIcons.length);
       iconsToUse = [...exportIcons]; // Create a copy to ensure React detects the change
+    } else if (activeOverlays.Resources && Array.isArray(selectedEconomy) && typeof selectedEconomy[7] === 'string') {
+      // Resources subfilter: parse selectedEconomy[7] and match to iconMap
+      const resources = selectedEconomy[7].split(',').map(r => r.trim().toLowerCase());
+      const matched: Array<{ keyword: string; color: string }> = [];
+      const usedKeywords = new Set<string>();
+      resources.forEach(resource => {
+        Object.entries(iconMap).forEach(([keyword, icon]) => {
+          if (resource === keyword.toLowerCase() && !usedKeywords.has(keyword)) {
+            matched.push({ keyword, color: icon.color });
+            usedKeywords.add(keyword);
+          }
+        });
+      });
+      iconsToUse = matched.slice(0, 24);
     }
     
     if (iconsToUse.length > 0) {
@@ -1807,7 +1447,7 @@ export default function Map({}: MapComponentProps) {
             const iconColor = (iconMap as any)?.[icon.keyword]?.color || icon.color;
             return (
               <div key={`${activeOverlays.exports}-icon-${index}-${icon.keyword}`} className="flex flex-col items-center text-sm">
-                {IconComponent && React.cloneElement(IconComponent, { style: { color: iconColor, fontSize: '1.8em' } })}
+                {IconComponent && React.createElement(IconComponent, { style: { color: iconColor, fontSize: '1.8em' } })}
                 <span style={{ color: iconColor, marginTop: '4px' }}>{icon.keyword}</span>
               </div>
             );
@@ -1822,130 +1462,148 @@ export default function Map({}: MapComponentProps) {
       setInfoPanelIcons([]);
       setInfoPanelIconElementsState(null);
     }
-  }, [activeOverlays, exportIcons, importIcons]); // Only depend on subFilter and icon arrays
+  }, [activeOverlays, exportIcons, importIcons, selectedEconomy]); // Only depend on subFilter and icon arrays
 
   // Update the circle features to use the new icon approach
-  useEffect(() => {
-    // Choose which icons to show on the map (not for InfoPanel)
-    let iconsToShow: Array<{ keyword: string; color: string, iconSize?: number }> = [];
-    if (activeOverlays.imports) {
-      console.log("Using import icons for MAP:", importIcons.length, "imports value:", imports);
-      iconsToShow = importIcons;
-    } else if (activeOverlays.exports) {
-      console.log("Using export icons for MAP:", exportIcons.length, "exports value:", exports);
-      iconsToShow = exportIcons;
-    } else {
-      iconsToShow = [];
-    }
+  // useEffect(() => {
+  //   // Choose which icons to show on the map (not for InfoPanel)
+  //   let iconsToShow: Array<{ keyword: string; color: string, iconSize?: number }> = [];
+  //   if (activeOverlays.imports) {
+  //     console.log("Using import icons for MAP:", importIcons.length, "imports value:", imports);
+  //     iconsToShow = importIcons;
+  //   } else if (activeOverlays.exports) {
+  //     console.log("Using export icons for MAP:", exportIcons.length, "exports value:", exports);
+  //     iconsToShow = exportIcons;
+  //   } else if (activeOverlays.Resources && infoPanelIcons.length > 0) {
+  //     iconsToShow = infoPanelIcons;
+  //   } else {
+  //     iconsToShow = [];
+  //   }
 
-    console.log("useEffect (map icon rendering): iconsToShow", iconsToShow);
+  //   console.log("useEffect (map icon rendering): iconsToShow", iconsToShow);
     
-    // Don't show icons if no country is selected or if there are no icons to show
-    if (!map.current || !selectedCountryCenter || iconsToShow.length === 0 || !highlightedCountryId) {
-      // Remove icon/label layers if present
-      if (map.current?.getLayer('export-labels')) map.current.removeLayer('export-labels');
-      if (map.current?.getLayer('export-icons')) map.current.removeLayer('export-icons');
-      if (map.current?.getSource('export-circles')) map.current.removeSource('export-circles');
-      return;
-    }
+  //   // Don't show icons if no country is selected or if there are no icons to show
+  //   if (!map.current || !selectedCountryCenter || iconsToShow.length === 0 || !highlightedCountryId) {
+  //     // Remove icon/label layers if present
+  //     if (map.current?.getLayer('export-labels')) map.current.removeLayer('export-labels');
+  //     if (map.current?.getLayer('export-icons')) map.current.removeLayer('export-icons');
+  //     if (map.current?.getSource('export-circles')) map.current.removeSource('export-circles');
+  //     return;
+  //   }
 
-    // Sort icons by descending iconSize (if present)
-    const sortedIcons = [...iconsToShow].sort((a, b) => (b.iconSize || 1) - (a.iconSize || 1));
+  //   // Sort icons by descending iconSize (if present)
+  //   const sortedIcons = [...iconsToShow].sort((a, b) => (b.iconSize || 1) - (a.iconSize || 1));
 
-    // Arc formation parameters
-    const n = sortedIcons.length;
-    const angleStep = Math.PI / 4; // 45deg between icons
-    const radius = 8.0; // degrees offset
-    const base = selectedCountryCenter;
-    const minSizeArc = 0.7;
-    const maxSizeArc = 2.0;
-    const iconFeatures = sortedIcons.map((icon, i) => {
-      let offset = [0, 0];
-      if (n > 1) {
-        const theta = (-(n-1)/2 + i) * angleStep;
-        offset = [radius * Math.sin(theta), radius * Math.cos(theta)];
-      }
-      const iconLng = base[0] + offset[0];
-      const iconLat = base[1] + offset[1];
-      // Scale icon size by position in sorted array (largest to smallest)
-      const iconSize = maxSizeArc - (i / Math.max(1, n-1)) * (maxSizeArc - minSizeArc);
-      const iconName = (iconMap as any)[icon.keyword]?.name || "default";
-      return {
-        type: 'Feature' as const,
-        properties: {
-          keyword: icon.keyword,
-          icon: iconName,
-          component: (iconMap as any)?.[icon.keyword]?.component,
-          iconSize,
-        },
-        geometry: {
-          type: 'Point' as const,
-          coordinates: [iconLng, iconLat]
-        }
-      };
-    });
+  //   // Arc formation parameters
+  //   const base = selectedCountryCenter;
+  //   let n = sortedIcons.length;
+  //   let angleStep = Math.PI / 8; // Default: 22.5deg between icons (tighter)
+  //   let radius = 4.0; // Default: closer to center
+  //   let minSizeArc = 0.4;
+  //   let maxSizeArc = 0.6;
+  //   // if (activeOverlays.Resources) {
+  //   //   angleStep = Math.PI / 16; // 11.25deg between icons (even tighter)
+  //   //   radius = 4; // Even closer
+  //   //   minSizeArc = 0.3;
+  //   //   maxSizeArc = 0.4;
+  //   // }
+  //   const iconFeatures = sortedIcons.map((icon, i) => {
+  //     let iconLng, iconLat;
+  //     if (activeOverlays.Resources) {
+  //       // Random scatter within a small radius
+  //       const scatterRadius = 3.5; // degrees, adjust for your map scale
+  //       const theta = Math.random() * 2 * Math.PI;
+  //       const dist = Math.random() * scatterRadius;
+  //       iconLng = base[0] + dist * Math.cos(theta);
+  //       iconLat = base[1] + dist * Math.sin(theta);
+  //     } else {
+  //       // Arc formation (default)
+  //       let offset = [0, 0];
+  //       if (n > 1) {
+  //         const theta = (-(n-1)/2 + i) * angleStep;
+  //         offset = [radius * Math.sin(theta), radius * Math.cos(theta)];
+  //       }
+  //       iconLng = base[0] + offset[0];
+  //       iconLat = base[1] + offset[1];
+  //     }
+  //     const iconSize = maxSizeArc - (i / Math.max(1, n-1)) * (maxSizeArc - minSizeArc);
+  //     const iconName = (iconMap as any)[icon.keyword]?.name || "default";
+  //     return {
+  //       type: 'Feature' as const,
+  //       properties: {
+  //         keyword: icon.keyword,
+  //         icon: iconName,
+  //         component: (iconMap as any)?.[icon.keyword]?.component,
+  //         iconSize,
+  //       },
+  //       geometry: {
+  //         type: 'Point' as const,
+  //         coordinates: [iconLng, iconLat]
+  //       }
+  //     };
+  //   });
 
-    // Remove existing layers and source if they exist
-    if (map.current.getLayer('export-labels')) map.current.removeLayer('export-labels');
-    if (map.current.getLayer('export-icons')) map.current.removeLayer('export-icons');
-    if (map.current.getSource('export-circles')) map.current.removeSource('export-circles');
+  //   // Remove existing layers and source if they exist
+  //   if (map.current.getLayer('export-labels')) map.current.removeLayer('export-labels');
+  //   if (map.current.getLayer('export-icons')) map.current.removeLayer('export-icons');
+  //   if (map.current.getSource('export-circles')) map.current.removeSource('export-circles');
 
-    // Add new source and layers
-    map.current.addSource('export-circles', {
-      type: 'geojson',
-      data: {
-        type: 'FeatureCollection',
-        features: iconFeatures
-      }
-    });
+  //   // Add new source and layers
+  //   map.current.addSource('export-circles', {
+  //     type: 'geojson',
+  //     data: {
+  //       type: 'FeatureCollection',
+  //       features: iconFeatures
+  //     }
+  //   });
 
-    map.current.addLayer({
-      id: 'export-icons',
-      type: 'symbol',
-      source: 'export-circles',
-      layout: {
-        'icon-image': ['get', 'icon'],
-        'icon-size': ['get', 'iconSize'],
-        'icon-allow-overlap': true,
-        'icon-ignore-placement': true,
-        'icon-padding': 5,
-        'symbol-spacing': 20
-      }
-    });
+  //   map.current.addLayer({
+  //     id: 'export-icons',
+  //     type: 'symbol',
+  //     source: 'export-circles',
+  //     layout: {
+  //       'icon-image': ['get', 'icon'],
+  //       'icon-size': ['get', 'iconSize'],
+  //       'icon-allow-overlap': true,
+  //       'icon-ignore-placement': true,
+  //       'icon-padding': 5,
+  //       'symbol-spacing': 20
+  //     }
+  //   });
 
-    map.current.addLayer({
-      id: 'export-labels',
-      type: 'symbol',
-      source: 'export-circles',
-      layout: {
-        'text-field': ['get', 'keyword'],
-        'text-size': 12,
-        'text-offset': [0, 2.2],
-        'text-anchor': 'bottom',
-        'text-allow-overlap': true
-      },
-      paint: {
-        'text-color': '#000000',
-        'text-halo-color': '#ffffff',
-        'text-halo-width': 2
-      }
-    });
+  //   map.current.addLayer({
+  //     id: 'export-labels',
+  //     type: 'symbol',
+  //     source: 'export-circles',
+  //     layout: {
+  //       'text-field': ['get', 'keyword'],
+  //       'text-size': 12,
+  //       'text-offset': [0, 2.2],
+  //       'text-anchor': 'bottom',
+  //       'text-allow-overlap': true
+  //     },
+  //     paint: {
+  //       'text-color': '#000000',
+  //       'text-halo-color': '#ffffff',
+  //       'text-halo-width': 2
+  //     }
+  //   });
 
-    // Cleanup function
-    return () => {
-      if (map.current) {
-        if (map.current.getLayer('export-labels')) {
-          map.current.removeLayer('export-labels');
-        }
-        if (map.current.getLayer('export-icons')) {
-          map.current.removeLayer('export-icons');
-        }
-        if (map.current.getSource('export-circles')) {
-          map.current.removeSource('export-circles');
-        }
-      }
-    };
-  }, [exportIcons, importIcons, selectedCountryCenter, mapZoom, activeOverlays, highlightedCountryId]);
+  //   // Cleanup function
+  //   return () => {
+  //     if (map.current) {
+  //       if (map.current.getLayer('export-labels')) {
+  //         map.current.removeLayer('export-labels');
+  //       }
+  //       if (map.current.getLayer('export-icons')) {
+  //         map.current.removeLayer('export-icons');
+  //       }
+  //       if (map.current.getSource('export-circles')) {
+  //         map.current.removeSource('export-circles');
+  //       }
+  //     }
+  //   };
+  // }, [exportIcons, importIcons, selectedCountryCenter, mapZoom, activeOverlays, highlightedCountryId]);
 
   // Add useEffect to handle updating visualization when a country is selected or subFilter changes
   useEffect(() => {
@@ -2304,479 +1962,650 @@ export default function Map({}: MapComponentProps) {
     }
   };
 
-  // 2. Create mineralDeposits array (approximate coordinates based on the screenshot)
-  // (This overlay is now removed)
-  // const mineralDeposits = [ ... ];
+  // Add debug log for mineral overlay hook
+  console.log("Calling useMineralOverlay with:", {
+    topCopperProducers,
+    topGoldProducers,
+    activeOverlays
+  });
 
-  // Top 10 copper producers (2024, in 1000 tons)
-  const topCopperProducers = [
-    { name: "Chile", coords: [-70, -30], production: 5300 },
-    { name: "DR Congo", coords: [22, -3], production: 3300 },
-    { name: "Peru", coords: [-75, -10], production: 2600 },
-    { name: "China", coords: [105, 35], production: 1800 },
-    { name: "USA", coords: [-110, 35], production: 1100 },
-    { name: "Indonesia", coords: [120, -5], production: 1100 },
-    { name: "Russia", coords: [100, 60], production: 930 },
-    { name: "Australia", coords: [135, -25], production: 800 },
-    { name: "Kazakhstan", coords: [68, 48], production: 740 },
-    { name: "Mexico", coords: [-102, 23], production: 700 },
-  ];
+  // Use the custom hook for mineral overlays (move this call here, after all dependencies are defined)
+  useMineralOverlay({
+    map,
+    gdpFilter,
+    activeOverlays,
+    addReactIconsToMapbox,
+    topCopperProducers,
+    topNickelProducers,
+    topManganeseProducers,
+    topLithiumProducers,
+    topUraniumProducers,
+    topREEProducers,
+    topCoalProducers,
+    topGasProducers,
+    topPetroleumProducers,
+    topCobaltProducers,
+    topDiamondProducers,
+    topGoldProducers,
+    topAluminiumProducers,
+    topIronOreProducers,
+    topSilverProducers,
+    iconMap,
+    formatProduction,
+    formatCoal,
+    formatGas,
+    formatPetroleum,
+    formatCobalt,
+    formatDiamond,
+    formatGold,
+    formatAluminium,
+    formatIronOre,
+    formatSilver,
+  });
 
-  // Top 10 nickel producers (2024, in tons)
-  const topNickelProducers = [
-    { name: "Indonesia", coords: [120, -5], production: 1600000 },
-    { name: "Philippines", coords: [122, 12], production: 330000 },
-    { name: "Russia", coords: [100, 60], production: 220000 },
-    { name: "New Caledonia", coords: [165.5, -21.5], production: 190000 },
-    { name: "Australia", coords: [135, -25], production: 160000 },
-    { name: "Canada", coords: [-95, 60], production: 130000 },
-    { name: "China", coords: [105, 35], production: 110000 },
-    { name: "Brazil", coords: [-55, -10], production: 83000 },
-    { name: "United States", coords: [-110, 35], production: 18000 },
-  ];
+  // Add mine site coordinates and names
+  const mineSites = [
+    {
+      name: "Bingham Canyon Mine",
+      coordinates: [-112.1500, 40.5200],
+      resources: ["copper", "gold", "silver", "molybdenum", "rare earth elements"],
+      ownership: "Rio Tinto Group",
+      location: "Southwest of Salt Lake City, Utah, USA",
+      details: "Largest man-made excavation, primarily copper, also produces gold, silver, and molybdenum. Over 19 million tons of copper produced since 1906. Depth of 1,200 meters, employs ~2,500 people."
+    },
+    {
+      name: "Grasberg Mine",
+      coordinates: [137.1167, -4.0533],
+      resources: ["gold", "copper", "silver"],
+      ownership: "Freeport-McMoRan (48.76%), PT Mineral Industri Indonesia (51.24%)",
+      location: "Papua, Indonesia",
+      details: "World's largest gold mine and second-largest copper mine, with open-pit and underground operations. Produced ~1.861 million ounces of gold in 2024. Covers 27,400 acres, employs ~19,500 people."
+    },
+    {
+      name: "Muruntau Mine",
+      coordinates: [64.5833, 41.4667],
+      resources: ["gold"],
+      ownership: "Navoi Mining and Metallurgical Company",
+      location: "Kyzylkum Desert, Navoiy Viloyati, Uzbekistan",
+      details: "One of the largest open-pit gold mines, producing ~1.8 million ounces of gold in 2023. Estimated reserves of 4,500 metric tons of gold. Operations expected to continue into the 2030s."
+    },
+    {
+      name: "Chuquicamata Mine",
+      coordinates: [-68.9000, -22.3000],
+      resources: ["copper"],
+      ownership: "Codelco",
+      location: "Northern Chile, near Calama",
+      details: "Largest open-pit copper mine by volume, producing ~500,000 tonnes of copper annually. Second-deepest open-pit mine at 850 meters. Nationalized by Chile in the 1960s."
+    },
+    {
+      name: "El Teniente Mine",
+      coordinates: [-70.3833, -34.0833],
+      resources: ["copper"],
+      ownership: "Codelco",
+      location: "Andes Mountains, 100 km southeast of Santiago, Chile",
+      details: "World's largest underground copper mine, with over 3,000 km of tunnels. Produces ~500,000 tonnes of copper yearly."
+    },
+    {
+      name: "Mirny Diamond Mine",
+      coordinates: [113.9931, 62.5289],
+      resources: ["diamonds"],
+      ownership: "Mirny GOK (Alrosa)",
+      location: "Eastern Siberia, Russia",
+      details: "Massive open-pit diamond mine, now primarily underground. Measures 1.25 km wide, 525m deep, producing ~2,000 kg of diamonds annually."
+    },
+    {
+      name: "Black Thunder Mine",
+      coordinates: [-105.3167, 43.6667],
+      resources: ["coal"],
+      ownership: "Arch Resources",
+      location: "Southern Powder River Basin, Wyoming, USA",
+      details: "World's largest coal mine by production, yielding ~62.68 million tonnes in 2023. Produces low-sulfur sub-bituminous coal."
+    },
+    {
+      name: "Gevra OC Mine",
+      coordinates: [82.5500, 22.3333],
+      resources: ["coal"],
+      ownership: "South Eastern Coalfields Limited",
+      location: "Korba district, Chhattisgarh, India",
+      details: "India's largest coal mine, producing ~60 million tonnes in 2023. Operates as an open-cast mine."
+    },
+    {
+      name: "North Antelope Rochelle Mine",
+      coordinates: [-105.2000, 43.7167],
+      resources: ["coal"],
+      ownership: "Peabody Energy",
+      location: "Campbell County, Wyoming, USA",
+      details: "World's third-largest coal mine by production, with ~56.25 million tonnes in 2023. Known for low-sulfur sub-bituminous coal."
+    },
+    {
+      name: "Olimpiada Gold Mine",
+      coordinates: [93.5000, 64.0000],
+      resources: ["gold"],
+      ownership: "Polyus",
+      location: "Krasnoyarsk Krai, Russia",
+      details: "Russia's largest gold mine, producing ~1.441 million ounces in 2024. Holds ~26 million ounces in reserves."
+    },
+    {
+      name: "Carajás Mine",
+      coordinates: [-50.1667, -6.0667],
+      resources: ["iron ore", "gold", "copper", "nickel"],
+      ownership: "Vale",
+      location: "Pará state, Brazil",
+      details: "World's largest iron ore mine, producing ~150 million tonnes of iron ore annually. Also produces gold, copper, and nickel. Discovered in the 1960s, employs self-driving trucks."
+    },
+    {
+      name: "Oyu Tolgoi Mine",
+      coordinates: [106.8667, 43.0167],
+      resources: ["copper", "gold"],
+      ownership: "Rio Tinto (66%), Government of Mongolia (34%)",
+      location: "South Gobi Desert, Mongolia",
+      details: "Combined open-pit and underground mine, producing ~450,000 tonnes of copper and ~1.7 million ounces of gold to date. Discovered in 2001."
+    },
+    {
+      name: "Kiruna Mine",
+      coordinates: [20.2000, 67.8500],
+      resources: ["iron ore"],
+      ownership: "Luossavaara-Kiirunavaara AB (LKAB)",
+      location: "Kiruna, Sweden",
+      details: "Largest and most modern underground iron ore mine, producing ~27 million tonnes annually. Ore body is 4 km long, up to 2 km deep."
+    },
+    {
+      name: "Garzweiler Mine",
+      coordinates: [6.5000, 51.0500],
+      resources: ["coal"],
+      ownership: "RWE Power",
+      location: "North Rhine-Westphalia, Germany",
+      details: "One of Europe's largest open-pit lignite mines, producing ~35 million tonnes of coal annually. Covers ~48 square kilometers."
+    },
+    {
+      name: "Batu Hijau Mine",
+      coordinates: [116.9333, -8.9667],
+      resources: ["copper", "gold"],
+      ownership: "PT Amman Mineral Nusa Tenggara",
+      location: "Sumbawa, Indonesia",
+      details: "Produced ~1.009 million ounces of gold in 2024. Significant copper producer, employs advanced mining technology."
+    },
+    {
+      name: "Kazzinc Consolidated",
+      coordinates: [69.1000, 50.4000],
+      resources: ["gold", "zinc", "lead", "silver"],
+      ownership: "Kazzinc Ltd (Glencore 70%)",
+      location: "East Kazakhstan",
+      details: "Produced ~1 million ounces of gold in 2024. Major zinc and lead producer, with significant precious metals output."
+    },
+    {
+      name: "Ahafo Mine",
+      coordinates: [-2.3167, 7.3167],
+      resources: ["gold"],
+      ownership: "Newmont (90%), Government of Ghana (10%)",
+      location: "Brong-Ahafo Region, Ghana",
+      details: "Produced ~798,000 ounces of gold in 2024. Newmont's only operation in Africa, with both surface and underground mining."
+    },
+    {
+      name: "Kibali Mine",
+      coordinates: [29.6000, 3.1333],
+      resources: ["gold"],
+      ownership: "AngloGold Ashanti (45%), Barrick (45%), Societe Miniere de Kilo-Moto (10%)",
+      location: "Haut-Uele Province, Democratic Republic of Congo",
+      details: "Produced ~686,667 ounces of gold in 2024. Africa's largest bullion operation, with recent discoveries extending mine life."
+    },
+    {
+      name: "Detour Lake Mine",
+      coordinates: [-79.6667, 50.0167],
+      resources: ["gold"],
+      ownership: "Agnico Eagle Mines",
+      location: "Ontario, Canada",
+      details: "Produced ~671,950 ounces of gold in 2024. Investments aim to increase production to 1 million ounces annually, with mine life to 2054."
+    },
+    {
+      name: "Canadian Malartic Mine",
+      coordinates: [-78.1333, 48.1333],
+      resources: ["gold"],
+      ownership: "Agnico Eagle Mines",
+      location: "Abitibi Region, Quebec, Canada",
+      details: "Produced ~655,654 ounces of gold in 2024. Significant open-pit and underground operations, with exploration potential."
+    },
+    
+      // Lithium
+      {
+        name: "Greenbushes Mine",
+        coordinates: [115.9500, -33.8667],
+        resources: ["lithium"],
+        ownership: "Talison Lithium (Tianqi Lithium 51%, Albemarle 49%)",
+        location: "Western Australia, Australia",
+        details: "World's largest hard-rock lithium mine, producing ~1.95 million tonnes of lithium concentrate annually. Supplies ~40% of global lithium. Operational since 1983."
+      },
+      {
+        name: "Salar del Hombre Muerto",
+        coordinates: [-66.9167, -25.4167],
+        resources: ["lithium"],
+        ownership: "Arcadium Lithium",
+        location: "Catamarca, Argentina",
+        details: "Major lithium brine operation, producing ~25,000 tonnes of lithium carbonate equivalent (LCE) annually. Part of Rio Tinto's portfolio post-Arcadium acquisition."
+      },
+      {
+        name: "Olaroz Mine",
+        coordinates: [-66.7500, -23.4167],
+        resources: ["lithium"],
+        ownership: "Arcadium Lithium",
+        location: "Jujuy, Argentina",
+        details: "Produces ~17,500 tonnes of LCE annually. Part of Lithium Triangle, key for EV battery production. Expanding capacity to 42,500 tonnes by 2026."
+      },
+      {
+        name: "Mount Holland Mine",
+        coordinates: [119.7167, -32.1167],
+        resources: ["lithium"],
+        ownership: "SQM (50%), Wesfarmers (50%)",
+        location: "Western Australia, Australia",
+        details: "One of world's largest hard-rock lithium deposits, producing ~50,000 tonnes of spodumene concentrate annually. Began production in 2024."
+      },
+      {
+        name: "Bikita Mine",
+        coordinates: [31.9167, -20.0833],
+        resources: ["lithium"],
+        ownership: "Sinomine Resource Group",
+        location: "Masvingo Province, Zimbabwe",
+        details: "Africa's richest lithium reserve, targeting ~300,000 tonnes of spodumene concentrate annually post-2022 upgrade. Acquired by China's Sinomine for $180M."
+      },
+    
+      // Cobalt
+      {
+        name: "Katanga Mine",
+        coordinates: [27.2500, -11.6667],
+        resources: ["cobalt", "copper"],
+        ownership: "Glencore",
+        location: "Katanga Province, Democratic Republic of Congo",
+        details: "Major cobalt producer, yielding ~22,000 tonnes of cobalt in 2023. By-product of copper mining, significant for EV batteries."
+      },
+      {
+        name: "Mutanda Mine",
+        coordinates: [27.3333, -11.7333],
+        resources: ["cobalt", "copper"],
+        ownership: "Glencore",
+        location: "Katanga Province, Democratic Republic of Congo",
+        details: "Produced ~15,000 tonnes of cobalt in 2023. Temporarily closed in 2019 due to low prices, resumed in 2021. Key for global cobalt supply."
+      },
+      {
+        name: "Murrin Murrin Mine",
+        coordinates: [121.8833, -28.7167],
+        resources: ["cobalt", "nickel"],
+        ownership: "Glencore",
+        location: "Western Australia, Australia",
+        details: "Produces ~2,000 tonnes of cobalt annually as nickel by-product. Significant laterite deposit, operational since 1999."
+      },
+      {
+        name: "Tenke Fungurume Mine",
+        coordinates: [26.3167, -10.5667],
+        resources: ["cobalt", "copper"],
+        ownership: "China Molybdenum (80%), Gécamines (20%)",
+        location: "Lualaba Province, Democratic Republic of Congo",
+        details: "One of world's largest cobalt mines, producing ~10,000 tonnes annually. Major copper-cobalt operation."
+      },
+    
+      // Manganese
+      {
+        name: "Kalahari Manganese Field (South 32)",
+        coordinates: [24.8000, -27.1167],
+        resources: ["manganese"],
+        ownership: "South32",
+        location: "Northern Cape, South Africa",
+        details: "World's largest manganese deposit, producing ~3.5 million tonnes annually. Supplies 25% of global manganese for steel and batteries."
+      },
+      {
+        name: "Moanda Mine",
+        coordinates: [13.2000, -1.6667],
+        resources: ["manganese"],
+        ownership: "Comilog (Eramet)",
+        location: "Haut-Ogooué Province, Gabon",
+        details: "Produces ~4 million tonnes of manganese ore annually. One of Africa's largest manganese operations, key for battery-grade manganese."
+      },
+      {
+        name: "Bootu Creek Mine",
+        coordinates: [131.1667, -18.6667],
+        resources: ["manganese"],
+        ownership: "OM Holdings",
+        location: "Northern Territory, Australia",
+        details: "Produces ~800,000 tonnes of manganese ore annually. Supplies steel and battery industries, operational since 2005."
+      },
+      {
+        name: "Bondoukou Mine",
+        coordinates: [-2.8000, 8.0333],
+        resources: ["manganese"],
+        ownership: "Taurus Gold Limited",
+        location: "Zanzan District, Côte d'Ivoire",
+        details: "One of four operating manganese mines in Côte d'Ivoire, producing ~500,000 tonnes annually. Exports primarily to China."
+      },
+    
+      // Uranium
+      {
+        name: "Cigar Lake Mine",
+        coordinates: [-104.5333, 58.0667],
+        resources: ["uranium"],
+        ownership: "Cameco (50.02%), Orano (37.1%), Idemitsu (7.88%), TEPCO (5%)",
+        location: "Saskatchewan, Canada",
+        details: "World's highest-grade uranium mine, producing ~7,000 tonnes of uranium annually. Supplies ~10% of global uranium."
+      },
+      {
+        name: "Husab Mine",
+        coordinates: [15.0333, -22.9167],
+        resources: ["uranium"],
+        ownership: "Swakop Uranium (CGN 90%, Epangelo Mining 10%)",
+        location: "Namib Desert, Namibia",
+        details: "Produces ~3,500 tonnes of uranium annually. One of world's largest uranium mines, operational since 2016."
+      },
+      {
+        name: "Olympic Dam Mine",
+        coordinates: [136.8833, -30.4333],
+        resources: ["uranium", "copper", "gold", "silver"],
+        ownership: "BHP",
+        location: "South Australia, Australia",
+        details: "Produces ~3,500 tonnes of uranium annually as by-product of copper mining. World's largest known uranium deposit."
+      },
+      {
+        name: "Karatau Mine",
+        coordinates: [68.8333, 43.6333],
+        resources: ["uranium"],
+        ownership: "Kazatomprom",
+        location: "South Kazakhstan",
+        details: "Produces ~3,000 tonnes of uranium annually. Part of Kazakhstan's dominant uranium industry, supplying ~40% of global uranium."
+      },
+    
+      // Nickel
+      {
+        name: "Norilsk Nickel Mines",
+        coordinates: [88.2000, 69.3333],
+        resources: ["nickel", "copper", "palladium", "platinum"],
+        ownership: "Nornickel",
+        location: "Krasnoyarsk Krai, Russia",
+        details: "World's largest nickel producer, yielding ~200,000 tonnes annually. Also produces significant palladium and platinum."
+      },
+      {
+        name: "Kambalda Nickel Operations",
+        coordinates: [121.6667, -31.2000],
+        resources: ["nickel"],
+        ownership: "IGO Limited",
+        location: "Western Australia, Australia",
+        details: "Produces ~30,000 tonnes of nickel annually. Historic nickel belt, operational since the 1960s."
+      },
+      {
+        name: "Sorowako Mine",
+        coordinates: [121.3667, -2.5333],
+        resources: ["nickel"],
+        ownership: "PT Vale Indonesia",
+        location: "South Sulawesi, Indonesia",
+        details: "Produces ~75,000 tonnes of nickel annually. Major laterite deposit, key for EV battery supply."
+      },
+      {
+        name: "Raglan Mine",
+        coordinates: [-73.6667, 61.6667],
+        resources: ["nickel", "cobalt"],
+        ownership: "Glencore",
+        location: "Nunavik, Quebec, Canada",
+        details: "Produces ~40,000 tonnes of nickel annually. Underground operation in Arctic region, also yields cobalt."
+      },
+    
+      // Zinc
+      {
+        name: "Rampura Agucha Mine",
+        coordinates: [74.7333, 25.8333],
+        resources: ["zinc", "lead"],
+        ownership: "Hindustan Zinc Limited (Vedanta)",
+        location: "Rajasthan, India",
+        details: "World's largest zinc mine, producing ~650,000 tonnes of zinc annually. Operational since 1991, also significant lead producer."
+      },
+      {
+        name: "Red Dog Mine",
+        coordinates: [-162.8333, 68.0667],
+        resources: ["zinc", "lead"],
+        ownership: "Teck Resources",
+        location: "Alaska, USA",
+        details: "Produces ~600,000 tonnes of zinc annually. One of world's largest zinc mines, located in remote Arctic region."
+      },
+      {
+        name: "McArthur River Mine",
+        coordinates: [136.0833, -16.4333],
+        resources: ["zinc", "lead", "silver"],
+        ownership: "Glencore",
+        location: "Northern Territory, Australia",
+        details: "Produces ~250,000 tonnes of zinc annually. Major zinc-lead deposit, operational since 1995."
+      },
+      {
+        name: "Antamina Mine",
+        coordinates: [-77.3167, -9.5333],
+        resources: ["zinc", "copper", "silver", "molybdenum", "rare earth elements"],
+        ownership: "BHP (33.75%), Glencore (33.75%), Teck (22.5%), Mitsubishi (10%)",
+        location: "Ancash Region, Peru",
+        details: "Produces ~400,000 tonnes of zinc annually. One of world's largest copper-zinc mines."
+      },
+    
+      // Rare Earths
+      {
+        name: "Bayan Obo Mine",
+        coordinates: [109.9667, 41.7833],
+        resources: ["rare earth elements", "iron ore"],
+        ownership: "China Northern Rare Earth High-Tech",
+        location: "Inner Mongolia, China",
+        details: "World's largest rare earth mine, producing ~120,000 tonnes of rare earth oxides annually. Supplies ~50% of global rare earths."
+      },
+      {
+        name: "Mountain Pass Mine",
+        coordinates: [-115.5333, 35.4833],
+        resources: ["rare earth elements"],
+        ownership: "MP Materials",
+        location: "California, USA",
+        details: "Produces ~40,000 tonnes of rare earth oxides annually, focusing on neodymium and praseodymium. Restarted in 2018 after bankruptcy."
+      },
+      {
+        name: "Mount Weld Mine",
+        coordinates: [122.1333, -28.8667],
+        resources: ["rare earth elements"],
+        ownership: "Lynas Rare Earths",
+        location: "Western Australia, Australia",
+        details: "Produces ~22,000 tonnes of rare earth oxides annually. Key source of neodymium and praseodymium for magnets."
+      },
+      {
+        name: "Kvanefjeld Project",
+        coordinates: [-46.0333, 60.9667],
+        resources: ["rare earth elements", "uranium"],
+        ownership: "Greenland Minerals",
+        location: "Southern Greenland",
+        details: "Development-stage project with 10.2 million tonnes of rare earth oxides. Uranium by-product halted by Greenland's 2021 ban."
+      },
+    
+      // Potash
+      {
+        name: "Nutrien Allan Mine",
+        coordinates: [-106.0667, 51.9333],
+        resources: ["potash"],
+        ownership: "Nutrien",
+        location: "Saskatchewan, Canada",
+        details: "Produces ~3 million tonnes of potash annually. Part of Saskatchewan's vast potash basin, key for fertilizer production."
+      },
+      {
+        name: "Uralkali Berezniki Mine",
+        coordinates: [56.8333, 59.4167],
+        resources: ["potash"],
+        ownership: "Uralkali",
+        location: "Perm Krai, Russia",
+        details: "Produces ~2.5 million tonnes of potash annually. One of Russia's largest potash operations, supplying global fertilizer markets."
+      },
+      {
+        name: "Mosaic Esterhazy Mine",
+        coordinates: [-102.1833, 50.6667],
+        resources: ["potash"],
+        ownership: "Mosaic Company",
+        location: "Saskatchewan, Canada",
+        details: "World's largest potash mine, producing ~5.5 million tonnes annually. Operational since 1962, key for agricultural fertilizers."
+      }
+    
+  ]
 
-  // Top 10 manganese producers (2024, in tons)
-  const topManganeseProducers = [
-    { name: "South Africa", coords: [25, -29], production: 6200000 },
-    { name: "China", coords: [105, 35], production: 3000000 },
-    { name: "Australia", coords: [135, -25], production: 2900000 },
-    { name: "Gabon", coords: [11.7, -1], production: 1800000 },
-    { name: "Brazil", coords: [-55, -10], production: 1000000 },
-    { name: "India", coords: [78, 22], production: 950000 },
-    { name: "Malaysia", coords: [102, 4], production: 400000 },
-    { name: "Ukraine", coords: [32, 49], production: 390000 },
-    { name: "Kazakhstan", coords: [68, 48], production: 390000 },
-    { name: "Ghana", coords: [-1, 7.9], production: 390000 },
-  ];
-
-  // Top 10 lithium producers (2024, in tons)
-  const topLithiumProducers = [
-    { name: "Australia", coords: [135, -25], production: 88000 },
-    { name: "Chile", coords: [-70, -30], production: 49000 },
-    { name: "China", coords: [105, 35], production: 41000 },
-    { name: "Argentina", coords: [-65, -25], production: 18000 },
-    { name: "Brazil", coords: [-55, -10], production: 10000 },
-    { name: "Zimbabwe", coords: [30.9, -19], production: 22000 },
-    { name: "United States", coords: [-110, 35], production: 5000 },
-    { name: "Bolivia", coords: [-65, -19], production: 700 },
-    { name: "Canada", coords: [-95, 60], production: 4300 },
-    { name: "Namibia", coords: [18, -22], production: 2700 },
-  ];
-
-  // Helper to format production numbers
-  function formatProduction(n: number): string {
-    if (n >= 1000000) return (n / 1000000).toFixed(1).replace(/\.0$/, '') + 'M t';
-    if (n >= 1000) return (n / 1000).toFixed(0) + 'k t';
-    return n + ' t';
-  }
-
-  // 3. Add useEffect for mineral icon overlay
+  // Mine gear icon effect: only run when map is ready and style is loaded
   useEffect(() => {
-    if (!map.current) return;
-
-    const addMineralOverlay = () => {
+    if (!map.current || !mapReady) return;
+    const gearSvg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512' fill='#6B7280'><path d='M487.4 315.7l-42.2-24.4c2.7-14.1 4.1-28.7 4.1-43.3s-1.4-29.2-4.1-43.3l42.2-24.4c15.1-8.7 21.1-27.6 13.7-43.2l-34.1-70.2c-7.5-15.5-25.7-22.6-41.2-15.9l-42.2 17.7c-22.2-17.1-46.7-30.6-73.2-39.7V24.6C312.6 10.9 301.7 0 288 0h-64c-13.7 0-24.6 10.9-24.6 24.6v49.2c-26.5 9.1-51 22.6-73.2 39.7l-42.2-17.7c-15.5-6.7-33.7.4-41.2 15.9l-34.1 70.2c-7.4 15.6-1.4 34.5 13.7 43.2l42.2 24.4C24.6 218.8 23.2 233.4 23.2 248s1.4 29.2 4.1 43.3l-42.2 24.4c-15.1 8.7-21.1 27.6-13.7 43.2l34.1 70.2c7.5 15.5 25.7 22.6 41.2 15.9l42.2-17.7c22.2 17.1 46.7 30.6 73.2 39.7v49.2c0 13.7 10.9 24.6 24.6 24.6h64c13.7 0 24.6-10.9 24.6-24.6v-49.2c26.5-9.1 51-22.6 73.2-39.7l42.2 17.7c15.5 6.7 33.7-.4 41.2-15.9l34.1-70.2c7.4-15.6 1.4-34.5-13.7-43.2zM256 336c-48.6 0-88-39.4-88-88s39.4-88 88-88 88 39.4 88 88-39.4 88-88 88z'/></svg>`;
+    const mineFeatures = mineSites.map((site, i) => ({
+      type: 'Feature' as const,
+      geometry: { type: 'Point' as const, coordinates: site.coordinates },
+      properties: { name: site.name, id: `mine-${i}`, details: site.details, location: site.location },
+    }));
+    let animationId: number;
+    let rotation = 0;
+    // Move addMineLayer definition here, before addGearImageAndLayer
+    function addMineLayer() {
       if (!map.current) return;
-      // Remove previous mineral layer/source if they exist
-      if (map.current.getLayer('mineral-icons')) map.current.removeLayer('mineral-icons');
-      if (map.current.getSource('mineral-deposits')) map.current.removeSource('mineral-deposits');
-      // Remove all old overlays
-      if (map.current.getLayer('copper-production-icons')) map.current.removeLayer('copper-production-icons');
-      if (map.current.getSource('copper-production')) map.current.removeSource('copper-production');
-      if (map.current.getLayer('nickel-production-icons')) map.current.removeLayer('nickel-production-icons');
-      if (map.current.getSource('nickel-production')) map.current.removeSource('nickel-production');
-      if (map.current.getLayer('manganese-production-icons')) map.current.removeLayer('manganese-production-icons');
-      if (map.current.getSource('manganese-production')) map.current.removeSource('manganese-production');
-      if (map.current.getLayer('lithium-production-icons')) map.current.removeLayer('lithium-production-icons');
-      if (map.current.getSource('lithium-production')) map.current.removeSource('lithium-production');
-      if (map.current.getLayer('uranium-production-icons')) map.current.removeLayer('uranium-production-icons');
-      if (map.current.getSource('uranium-production')) map.current.removeSource('uranium-production');
-
-      if (gdpFilter !== 0 || !activeOverlays.Resources) return; // Only show when Economy filter is active and Resources overlay is selected
-
-      // Register mineral icons with Mapbox
-      const mineralIconDefs = ["REE", "Mn", "Ni", "Cu", "Co", "Li", "U"].map(key => ({
-        component: (iconMap as any)[key].component,
-        name: key,
-      }));
-      addReactIconsToMapbox(map.current, mineralIconDefs);
-
-      // Combine all producers into a country->minerals map
-      const allProducers = [
-        ...topCopperProducers.map(x => ({...x, mineral: 'Cu', label: formatProduction(x.production), max: 5300000, prod: x.production*1000 })),
-        ...topNickelProducers.map(x => ({...x, mineral: 'Ni', label: formatProduction(x.production), max: Math.max(...topNickelProducers.map(y=>y.production)), prod: x.production })),
-        ...topManganeseProducers.map(x => ({...x, mineral: 'Mn', label: formatProduction(x.production), max: Math.max(...topManganeseProducers.map(y=>y.production)), prod: x.production })),
-        ...topLithiumProducers.map(x => ({...x, mineral: 'Li', label: formatProduction(x.production), max: Math.max(...topLithiumProducers.map(y=>y.production)), prod: x.production })),
-        ...topUraniumProducers.map(x => ({...x, mineral: 'U', label: formatProduction(x.production), max: Math.max(...topUraniumProducers.map(y=>y.production)), prod: x.production })),
-        ...topREEProducers.map(x => ({...x, mineral: 'REE', label: formatProduction(x.production), max: Math.max(...topREEProducers.map(y=>y.production)), prod: x.production })),
-        ...topCoalProducers.map(x => ({...x, mineral: 'coal', label: formatCoal(x.production), max: Math.max(...topCoalProducers.map(y=>y.production)), prod: x.production })),
-        ...topGasProducers.map(x => ({...x, mineral: 'gas', label: formatGas(x.production), max: Math.max(...topGasProducers.map(y=>y.production)), prod: x.production })),
-        ...topPetroleumProducers.map(x => ({...x, mineral: 'petroleum', label: formatPetroleum(x.production), max: Math.max(...topPetroleumProducers.map(y=>y.production)), prod: x.production })),
-        ...topCobaltProducers.map(x => ({...x, mineral: 'Co', label: formatCobalt(x.production), max: Math.max(...topCobaltProducers.map(y=>y.production)), prod: x.production })),
-        ...topDiamondProducers.map(x => ({...x, mineral: 'diamonds', label: formatDiamond(x.production), max: Math.max(...topDiamondProducers.map(y=>y.production)), prod: x.production })),
-        ...topGoldProducers.map(x => ({...x, mineral: 'gold', label: formatGold(x.production), max: Math.max(...topGoldProducers.map(y=>y.production)), prod: x.production })),
-        ...topAluminiumProducers.map(x => ({...x, mineral: 'aluminium', label: formatAluminium(x.production), max: Math.max(...topAluminiumProducers.map(y=>y.production)), prod: x.production })),
-        ...topIronOreProducers.map(x => ({...x, mineral: 'iron', label: formatIronOre(x.production), max: Math.max(...topIronOreProducers.map(y=>y.production)), prod: x.production })),
-        ...topSilverProducers.map(x => ({...x, mineral: 'silver', label: formatSilver(x.production), max: Math.max(...topSilverProducers.map(y=>y.production)), prod: x.production })),
-      ];
-      // Group by country
-      const countryMinerals: {[country: string]: any[]} = {};
-      allProducers.forEach(item => {
-        if (!countryMinerals[item.name]) countryMinerals[item.name] = [];
-        countryMinerals[item.name].push(item);
-      });
-      // For each country, fan out icons if >1 mineral
-      const features: any[] = [];
-      const minSize = 0.5;
-      const maxSize = 1.5;
-      Object.entries(countryMinerals).forEach(([country, minerals]) => {
-        const base = minerals[0].coords;
-        const n = minerals.length;
-        const angleStep = Math.PI / 4; // 30deg between icons
-        const radius = 8.0; // degrees offset
-        minerals.forEach((min, i) => {
-          let offset = [0,0];
-          if (n > 1) {
-            // Fan out in arc above the country center
-            const theta = (-(n-1)/2 + i) * angleStep;
-            offset = [radius * Math.sin(theta), radius * Math.cos(theta)];
-          }
-          const coords = [base[0] + offset[0], base[1] + offset[1]];
-          // Scale icon size by production/max for that mineral
-          const iconSize = minSize + (maxSize - minSize) * (min.prod / min.max);
-          features.push({
-            type: 'Feature',
-            geometry: { type: 'Point', coordinates: coords },
-            properties: {
-              country: country,
-              mineral: min.mineral,
-              label: min.label,
-              iconSize,
-            }
-          });
+      // Add mine sites as a GeoJSON source
+      if (map.current.getSource('mine-sites')) {
+        (map.current.getSource('mine-sites') as mapboxgl.GeoJSONSource).setData({ type: 'FeatureCollection', features: mineFeatures });
+        console.log('Updated mine-sites source');
+      } else {
+        map.current.addSource('mine-sites', {
+          type: 'geojson',
+          data: { type: 'FeatureCollection', features: mineFeatures },
         });
-      });
-      map.current.addSource('mineral-deposits', {
-        type: 'geojson',
-        data: { type: 'FeatureCollection', features }
-      });
-      map.current.addLayer({
-        id: 'mineral-icons',
-        type: 'symbol',
-        source: 'mineral-deposits',
-        layout: {
-          'icon-image': ['get', 'mineral'],
-          'icon-size': ['get', 'iconSize'],
-          'icon-allow-overlap': true,
-          'icon-ignore-placement': true,
-          // Always show element name instead of production quantity
-          'text-field': [
-            'match',
-            ['get', 'mineral'],
-            'Cu', 'Copper',
-            'Ni', 'Nickel',
-            'Mn', 'Manganese',
-            'Li', 'Lithium',
-            'U', 'Uranium',
-            'REE', 'Rare Earths',
-            'Co', 'Cobalt',
-            'diamonds', 'Diamonds',
-            'gold', 'Gold',
-            'coal', 'Coal',
-            'gas', 'Natural Gas',
-            'petroleum', 'Petroleum',
-            'aluminium', 'Aluminium',
-            'iron', 'Iron Ore',
-            'silver', 'Silver',
-            'minerals', 'Minerals',
-            ['get', 'mineral']
-          ],
-          'text-offset': [0, 2.2],
-          'text-size': 14,
-          'text-anchor': 'top'
-        },
-        paint: {
-          'text-color': '#fff',
-          'text-halo-color': '#000',
-          'text-halo-width': 2
-        }
-      });
+        console.log('Added mine-sites source');
+      }
 
-      // Add popup on hover for mineral icons (always enabled)
-      map.current.on('mouseenter', 'mineral-icons', (e) => {
-        if (!map.current) return;
-        map.current.getCanvas().style.cursor = 'pointer';
+      // Add a symbol layer for the gear icons
+      if (!map.current.getLayer('mine-gears')) {
+        map.current.addLayer({
+          id: 'mine-gears',
+          type: 'symbol',
+          source: 'mine-sites',
+          minzoom: 4, // Only show at zoom >= 4
+          layout: {
+            'icon-image': 'gear-icon',
+            'icon-size': 0.8,
+            'icon-allow-overlap': true,
+            'icon-ignore-placement': true,
+            'icon-rotate': ['get', 'rotation'],
+          },
+        });
+        console.log('Added mine-gears layer');
+      }
+
+      // Add a symbol layer for the mine name labels (below the icon, no halo)
+      if (!map.current.getLayer('mine-labels')) {
+        map.current.addLayer({
+          id: 'mine-labels',
+          type: 'symbol',
+          source: 'mine-sites',
+          minzoom: 3, // Only show at zoom >= 4
+          layout: {
+            'text-field': ['get', 'name'],
+            'text-size': 13,
+            'text-offset': [0, 2.2],
+            'text-anchor': 'top',
+            'text-allow-overlap': true,
+          },
+          paint: {
+            'text-color': '#111111',
+            'text-halo-width': 0,
+          },
+        });
+        console.log('Added mine-labels layer');
+      }
+
+      // Animate rotation (slower)
+      function animateGears() {
+        rotation = (rotation + 0.2) % 360; // much slower
+        const features = mineFeatures.map(f => ({ ...f, properties: { ...f.properties, rotation }, type: 'Feature' as const, geometry: { ...f.geometry, type: 'Point' as const } }));
+        (map.current?.getSource('mine-sites') as mapboxgl.GeoJSONSource)?.setData({ type: 'FeatureCollection', features });
+        animationId = requestAnimationFrame(animateGears);
+      }
+    // animateGears();
+
+      // Add popup on click
+      map.current.on('click', 'mine-gears', (e) => {
         if (!e.features || !e.features.length) return;
         const feature = e.features[0];
-        const props = feature.properties;
-        console.log(e.features);
-        if (!props || !feature.geometry || feature.geometry.type !== 'Point') return;
-        const coords = feature.geometry.coordinates as [number, number];
-        // Try to get the country name from feature properties or fallback to allProducers lookup
-        let country = '';
-        if (props.country) {
-          country = props.country;
-        } else if (props.NAME) {
-          country = props.NAME;
-        } else {
-          country = allProducers.find(p => p.mineral === props.mineral && p.coords[0] === coords[0] && p.coords[1] === coords[1])?.name || '';
-        }
-        if (!country) {
-          console.log('Mineral icon popup: Could not determine country name. Feature properties:', props);
-        }
-        const element = (() => {
-          switch (props.mineral) {
-            case 'Cu': return 'Copper';
-            case 'Ni': return 'Nickel';
-            case 'Mn': return 'Manganese';
-            case 'Li': return 'Lithium';
-            case 'U': return 'Uranium';
-            case 'REE': return 'Rare Earths';
-            case 'Co': return 'Cobalt';
-            case 'diamonds': return 'Diamonds';
-            case 'gold': return 'Gold';
-            case 'coal': return 'Coal';
-            case 'gas': return 'Natural Gas';
-            case 'petroleum': return 'Petroleum';
-            case 'aluminium': return 'Aluminium';
-            case 'iron': return 'Iron Ore';
-            case 'silver': return 'Silver';
-            case 'minerals': return 'Minerals';
-            default: return props.mineral;
-          }
-        })();
-        const production = props.label;
-        const popupHtml = `<div style='font-size:14px;min-width:120px;background:#fff;color:#222;padding:10px 14px;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.08)'>
-          <b>Country:</b> ${country}<br/>
-          <b>Element:</b> ${element}<br/>
-          <b>Production:</b> ${production}
-        </div>`;
-        new mapboxgl.Popup({ closeButton: false })
-          .setLngLat(coords)
-          .setHTML(popupHtml)
+        const coordinates = (feature.geometry.type === 'Point' && Array.isArray(feature.geometry.coordinates) && feature.geometry.coordinates.length === 2)
+          ? feature.geometry.coordinates as [number, number]
+          : [0, 0];
+        const props = feature.properties as { name?: string; location?: string; details?: string };
+        const name = props?.name || '';
+        const location = props?.location || '';
+        const details = props?.details || '';
+        // Create popup content
+        const popupContent = `
+          <div style="background:white;padding:12px;border-radius:12px;min-width:220px;max-width:320px;">
+            <div style="font-weight:bold;font-size:1.1em;margin-bottom:4px;">${name}</div>
+            <div style="color:#666;font-size:0.95em;margin-bottom:4px;">${location}</div>
+            <div style="color:#333;font-size:0.97em;">${details}</div>
+          </div>
+        `;
+        new mapboxgl.Popup({ closeOnClick: true })
+          .setLngLat(coordinates as [number, number])
+          .setHTML(popupContent)
           .addTo(map.current!);
       });
-      map.current.on('mouseleave', 'mineral-icons', () => {
-        if (!map.current) return;
-        map.current.getCanvas().style.cursor = '';
-        const popups = document.getElementsByClassName('mapboxgl-popup');
-        if (popups.length) {
+      // Close popup on map click elsewhere
+      map.current.on('click', (e) => {
+        const features = map.current?.queryRenderedFeatures(e.point, { layers: ['mine-gears'] });
+        if (!features || !features.length) {
+          const popups = document.getElementsByClassName('mapboxgl-popup');
           for (let i = 0; i < popups.length; i++) {
-            popups[i].remove();
+            (popups[i] as HTMLElement).remove();
           }
         }
       });
-    };
-
-    if (map.current?.isStyleLoaded()) {
-      addMineralOverlay();
-    } else {
-      map.current?.once('style.load', addMineralOverlay);
     }
 
-    // Cleanup
-    return () => {
-      if (map.current?.isStyleLoaded()) {
-        if (map.current?.getLayer('mineral-icons')) map.current.removeLayer('mineral-icons');
-        if (map.current?.getSource('mineral-deposits')) map.current.removeSource('mineral-deposits');
-        if (map.current?.getLayer('copper-production-icons')) map.current.removeLayer('copper-production-icons');
-        if (map.current?.getSource('copper-production')) map.current.removeSource('copper-production');
-        if (map.current?.getLayer('nickel-production-icons')) map.current.removeLayer('nickel-production-icons');
-        if (map.current?.getSource('nickel-production')) map.current.removeSource('nickel-production');
-        if (map.current?.getLayer('manganese-production-icons')) map.current.removeLayer('manganese-production-icons');
-        if (map.current?.getSource('manganese-production')) map.current.removeSource('manganese-production');
-        if (map.current?.getLayer('lithium-production-icons')) map.current.removeLayer('lithium-production-icons');
-        if (map.current?.getSource('lithium-production')) map.current.removeSource('lithium-production');
-        if (map.current?.getLayer('uranium-production-icons')) map.current.removeLayer('uranium-production-icons');
-        if (map.current?.getSource('uranium-production')) map.current.removeSource('uranium-production');
+    // Now define addGearImageAndLayer, which can call addMineLayer
+    function addGearImageAndLayer() {
+      if (!map.current) return;
+      if (!map.current.hasImage('gear-icon')) {
+        const img = new window.Image(48, 48);
+        const svg = new Blob([gearSvg], { type: 'image/svg+xml' });
+        const url = URL.createObjectURL(svg);
+        img.onload = () => {
+          if (!map.current) return;
+          if (!map.current.hasImage('gear-icon')) {
+            map.current.addImage('gear-icon', img, { pixelRatio: 2 });
+            console.log('Added gear-icon image');
+          }
+          URL.revokeObjectURL(url);
+          addMineLayer();
+        };
+        img.onerror = (e) => {
+          console.error('Failed to load gear-icon image', e);
+        };
+        img.src = url;
+      } else {
+        addMineLayer();
       }
-      if (map.current) {
-        map.current.off('style.load', addMineralOverlay);
-      }
-    };
-  }, [gdpFilter, activeOverlays]);
+    }
 
-  // Top 10 uranium producers (2024, in tons)
-  const topUraniumProducers = [
-    { name: "Kazakhstan", coords: [68, 48], production: 21227 },
-    { name: "Canada", coords: [-95, 60], production: 7351 },
-    { name: "Namibia", coords: [18, -22], production: 5613 },
-    { name: "Australia", coords: [135, -25], production: 4553 },
-    { name: "Uzbekistan", coords: [64, 41], production: 3300 },
-    { name: "Russia", coords: [100, 60], production: 2508 },
-    { name: "Niger", coords: [8, 17], production: 2020 },
-    { name: "China", coords: [105, 35], production: 1700 },
-    { name: "India", coords: [78, 22], production: 600 },
-    { name: "South Africa", coords: [25, -29], production: 200 },
-  ];
+       // Add on style load and style reload
+       const mapInstance = map.current;
+       function handleStyleData() {
+         console.log('Map style loaded or reloaded, adding mine sites and gear icons');
+         addGearImageAndLayer();
+       }
+       mapInstance.on('styledata', handleStyleData);
+       // Initial add
+       handleStyleData();
 
-  // Top 10 rare earths producers (2024, in tons)
-  const topREEProducers = [
-    { name: "United States", coords: [-110, 35], production: 45000 },
-    { name: "Australia", coords: [135, -25], production: 13000 },
-    { name: "Burma", coords: [96, 21], production: 31000 }, // Burma = Myanmar
-    { name: "China", coords: [105, 35], production: 270000 },
-    { name: "India", coords: [78, 22], production: 2900 },
-    { name: "Madagascar", coords: [47, -20], production: 2000 },
-    { name: "Nigeria", coords: [8, 9], production: 13000 },
-    { name: "Russia", coords: [100, 60], production: 2500 },
-    { name: "Thailand", coords: [100, 15], production: 13000 },
-    { name: "Vietnam", coords: [108, 16], production: 300 },
-  ];
+    // ... rest of your useEffect ...
+  }, [mapReady]);
 
-  // Top 10 coal producers (2024, in million tonnes)
-  const topCoalProducers = [
-    { name: "China", coords: [105, 35], production: 4362 },
-    { name: "India", coords: [78, 22], production: 968 },
-    { name: "Indonesia", coords: [120, -5], production: 781 },
-    { name: "United States", coords: [-110, 35], production: 524 },
-    { name: "Russia", coords: [100, 60], production: 479 },
-    { name: "Australia", coords: [135, -25], production: 442 },
-    { name: "South Africa", coords: [25, -29], production: 238 },
-    { name: "Kazakhstan", coords: [68, 48], production: 117 },
-    { name: "Germany", coords: [10, 51], production: 102 },
-    { name: "Poland", coords: [20, 52], production: 88 },
-  ];
+  useEffect(() => {
+    if (!map.current || !mapReady || !map.current.isStyleLoaded()) return;
+    // ... existing code for mine-gears, mine-labels, and mine resource icons ...
+  }, [mapReady, highlightedCountryId, countryOption]);
 
-  // Top 10 natural gas producers (2024, in million m³)
-  const topGasProducers = [
-    { name: "United States", coords: [-110, 35], production: 967300 },
-    { name: "Russia", coords: [100, 60], production: 701000 },
-    { name: "Iran", coords: [53, 32], production: 237581 },
-    { name: "China", coords: [105, 35], production: 179317 },
-    { name: "Canada", coords: [-95, 60], production: 178725 },
-    { name: "Qatar", coords: [51, 25], production: 167480 },
-    { name: "Australia", coords: [135, -25], production: 142110 },
-    { name: "Saudi Arabia", coords: [45, 24], production: 114000 },
-    { name: "Norway", coords: [10, 61], production: 112000 },
-    { name: "Algeria", coords: [3, 28], production: 87860 },
-  ];
+  // Example for zoom-based layer visibility effect:
+  useEffect(() => {
+    if (!map.current || !mapReady || !map.current.isStyleLoaded()) return;
+    // ... existing code for zoom-based visibility ...
+  }, [mapZoom, mapReady]);
 
-  // Top 10 petroleum producers (2024, in barrels/day)
-  const topPetroleumProducers = [
-    { name: "United States", coords: [-110, 35], production: 13401000 },
-    { name: "Saudi Arabia", coords: [45, 24], production: 10815700 },
-    { name: "Russia", coords: [100, 60], production: 10750000 },
-    { name: "Canada", coords: [-95, 60], production: 5500000 },
-    { name: "China", coords: [105, 35], production: 4715000 },
-    { name: "Iraq", coords: [44, 33], production: 4162000 },
-    { name: "Iran", coords: [53, 32], production: 4084000 },
-    { name: "United Arab Emirates", coords: [54, 24], production: 3770000 },
-    { name: "Brazil", coords: [-55, -10], production: 3630000 },
-    { name: "Kuwait", coords: [48, 29], production: 2720000 },
-  ];
+  // Apply this pattern to all useEffects that interact with the map (getStyle, add/remove layers/sources, etc.)
+  // ... existing code ...
 
-  // Top 10 cobalt producers (2024, in metric tonnes)
-  const topCobaltProducers = [
-    { name: "DR Congo", coords: [22, -3], production: 130000 },
-    { name: "Indonesia", coords: [120, -5], production: 10000 },
-    { name: "Russia", coords: [100, 60], production: 8900 },
-    { name: "Australia", coords: [135, -25], production: 5900 },
-    { name: "Canada", coords: [-95, 60], production: 3900 },
-    { name: "Cuba", coords: [-80, 21.5], production: 3800 },
-    { name: "Philippines", coords: [122, 12], production: 3800 },
-    { name: "Madagascar", coords: [47, -20], production: 3000 },
-    { name: "Papua New Guinea", coords: [143, -6], production: 3000 },
-    { name: "Turkey", coords: [35, 39], production: 2700 },
-  ];
+  console.log('[MapComponent] Map component rendered');
 
-  // Top 10 diamond producers (2024, in million carats)
-  const topDiamondProducers = [
-    { name: "Russia", coords: [100, 60], production: 37.3 },
-    { name: "Botswana", coords: [25, -22], production: 25.1 },
-    { name: "Canada", coords: [-95, 60], production: 15.6 },
-    { name: "DR Congo", coords: [22, -3], production: 9.9 },
-    { name: "Angola", coords: [17, -12], production: 9.75 },
-    { name: "South Africa", coords: [25, -29], production: 5.89 },
-    { name: "Zimbabwe", coords: [30.9, -19], production: 4.91 },
-    { name: "Namibia", coords: [17, -22], production: 2.39 },
-    { name: "Sierra Leone", coords: [-11, 8.5], production: 0.52 },
-    { name: "Lesotho", coords: [28, -29], production: 0.47 },
-  ];
-
-  // Top 10 gold producers (2024, in tonnes)
-  const topGoldProducers = [
-    { name: "China", coords: [105, 35], production: 380 },
-    { name: "Russia", coords: [100, 60], production: 310 },
-    { name: "Australia", coords: [135, -25], production: 290 },
-    { name: "Canada", coords: [-95, 60], production: 200 },
-    { name: "United States", coords: [-110, 35], production: 160 },
-    { name: "Ghana", coords: [-1, 7.9], production: 130 },
-    { name: "Mexico", coords: [-102, 23], production: 130 },
-    { name: "Kazakhstan", coords: [68, 48], production: 130 },
-    { name: "Uzbekistan", coords: [64, 41], production: 120 },
-    { name: "South Africa", coords: [25, -29], production: 100 },
-  ];
-
-  // Top 10 aluminium producers (2024, in thousand tonnes)
-  const topAluminiumProducers = [
-    { name: "China", coords: [105, 35], production: 43000 },
-    { name: "India", coords: [78, 22], production: 4200 },
-    { name: "Russia", coords: [100, 60], production: 3800 },
-    { name: "Canada", coords: [-95, 60], production: 3300 },
-    { name: "United Arab Emirates", coords: [54, 24], production: 2700 },
-    { name: "Bahrain", coords: [50.5, 26], production: 1600 },
-    { name: "Australia", coords: [135, -25], production: 1500 },
-    { name: "Norway", coords: [10, 61], production: 1300 },
-    { name: "Brazil", coords: [-55, -10], production: 1100 },
-    { name: "Malaysia", coords: [102, 4], production: 870 },
-  ];
-
-  // Top 10 iron ore producers (2024, in thousand tonnes)
-  const topIronOreProducers = [
-    { name: "Australia", coords: [135, -25], production: 930000 },
-    { name: "Brazil", coords: [-55, -10], production: 440000 },
-    { name: "China", coords: [105, 35], production: 270000 },
-    { name: "India", coords: [78, 22], production: 270000 },
-    { name: "Russia", coords: [100, 60], production: 91000 },
-    { name: "Iran", coords: [53, 32], production: 90000 },
-    { name: "South Africa", coords: [25, -29], production: 66000 },
-    { name: "Canada", coords: [-95, 60], production: 54000 },
-    { name: "United States", coords: [-110, 35], production: 48000 },
-    { name: "Ukraine", coords: [32, 49], production: 42000 },
-  ];
-
-  // Top 10 silver producers (2024, in tonnes)
-  const topSilverProducers = [
-    { name: "Mexico", coords: [-102, 23], production: 6400 },
-    { name: "China", coords: [105, 35], production: 3400 },
-    { name: "Peru", coords: [-75, -10], production: 3100 },
-    { name: "Chile", coords: [-70, -30], production: 1400 },
-    { name: "Poland", coords: [20, 52], production: 1300 },
-    { name: "Australia", coords: [135, -25], production: 1200 },
-    { name: "Bolivia", coords: [-65, -19], production: 1200 },
-    { name: "Russia", coords: [100, 60], production: 1200 },
-    { name: "United States", coords: [-110, 35], production: 1000 },
-    { name: "Kazakhstan", coords: [68, 48], production: 990 },
-  ];
-
-  // Helper to format production numbers for new overlays
-  function formatCoal(n: number): string {
-    return n + ' Mt';
-  }
-  function formatGas(n: number): string {
-    return (n / 1000).toFixed(0) + ' B m³';
-  }
-  function formatPetroleum(n: number): string {
-    return (n / 1000000).toFixed(1).replace(/\.0$/, '') + ' M bbl/d';
-  }
-  function formatCobalt(n: number): string {
-    return n + ' t';
-  }
-  function formatDiamond(n: number): string {
-    return n + ' M ct';
-  }
-  function formatGold(n: number): string {
-    return n + ' t';
-  }
-  function formatAluminium(n: number): string {
-    return n + 'k t';
-  }
-  function formatIronOre(n: number): string {
-    return n + 'k t';
-  }
-  function formatSilver(n: number): string {
-    return n + ' t';
-  }
+  
 
   return (
     <div className="relative h-screen w-screen">
@@ -2822,7 +2651,8 @@ export default function Map({}: MapComponentProps) {
           infoPanelIconElements={infoPanelIconElementsState}
         />
       )}
-      <Legend />
+      {/* Show Legend only if Resources is active and no country is selected */}
+      {activeOverlays.Resources && !highlightedCountryId && <Legend />}
 
       <button
         id="btn-spin"

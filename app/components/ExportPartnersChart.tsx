@@ -83,9 +83,9 @@ const ExportPartnersChart: React.FC<ExportPartnersChartProps> = ({ exportsPartne
   }
 
   return (
-    <div className="bg-white  p-4 rounded-lg shadow-md max-w-md mx-auto mt-2">
-      <h3 className="text-md font-semibold text-center mb-4 text-gray-700">Export Partners</h3>
-      <div style={{ height: '150px' }}>
+    <div className="bg-white p-2 rounded-lg shadow-md max-w-md mx-auto mt-2">
+      <h3 className="text-md font-semibold text-center mb-2 text-gray-700">Export Partners</h3>
+      <div style={{ height: '120px' }}>
         <Pie 
           data={chartData} 
           options={{

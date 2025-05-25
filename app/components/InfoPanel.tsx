@@ -3,6 +3,8 @@ import ExportIcons from "./ExportIcons";
 import ImportIcons from "./ImportIcons";
 import ExportPartnersChart from "./ExportPartnersChart";
 import ImportPartnersChart from "./ImportPartnersChart";
+import { CircularProgress } from "./CircularProgress";
+import { iconMap } from '../utils/iconMap';
 
 interface InfoPanelProps {
   gdpFilter: number;
@@ -135,20 +137,79 @@ const InfoPanel: React.FC<InfoPanelProps> = ({
     if (Array.isArray(selectedEconomy)) {
       return (
         <>
-         <div className="bg-white text-black text-lg p-3 rounded-lg icon-container">
+         <div className="bg-white text-black pl-2 py-2 rounded-lg icon-container ">
           <div className="text-2xl font-semibold"> {selectedEconomy[0]}</div>
-          <div> {selectedEconomy[1]}</div>
-        
-          <div><em>Unemployment Rate:</em> {selectedEconomy[2]}</div>
-          <div><em>Debt:</em> {selectedEconomy[3]}</div>
-          <div><em>Inflation Rate:</em> {selectedEconomy[4]}</div>
-          {/* <div><em>Industries:</em> {selectedEconomy[6]}</div> */}
-           
-           </div>
-          <div key={`icon-container-${subFilter}`} className="icon-container">
-            {renderedIconElements}
-           
+          <div className=" pt-2">
+            <div className="text-[16px] capitalize-first-letter">{typeof selectedEconomy[1] === 'string' ? selectedEconomy[1].replace(/^<p>|<\/p>$/gi, '') : selectedEconomy[1]}</div>
           </div>
+         
+        
+        
+           </div>
+           {(subFilter !== 'exports' && subFilter !== 'imports') && (
+           <div className="bg-white text-black p-2 rounded-lg icon-container mt-2">
+           <div className="flex flex-row justify-between items-center gap-2" >
+            
+           <CircularProgress
+              value={parseFloat(selectedEconomy[4])}
+              label="Inflation"
+              color="#38bdf8"
+              unit="%"
+              max={20}
+            />
+           
+            <CircularProgress
+              value={parseFloat(selectedEconomy[3])}
+              label="Debt/GDP"
+              color="#4ade80"
+              unit="%"
+              max={150}
+            />
+
+             <CircularProgress
+              value={parseFloat(selectedEconomy[2])}
+              label="Unemployment"
+              color="#f59e42"
+              unit="%"
+              max={20}
+            />
+           
+            <CircularProgress
+              value={parseFloat(selectedEconomy[5])}
+              label="GDP/capita"
+              color="#6366f1"
+              unit="k"
+              max={100}
+            />
+          </div>
+          </div>
+           )}
+          {/* <div className="text-black"> {selectedEconomy[7]}</div> */}
+          <div key={`icon-container-${subFilter}`} className="icon-container grid grid-cols-4 gap-x-3 gap-y-2 bg-white p-2 rounded-lg shadow-md mt-2 ">
+            {infoPanelIcons &&
+              (subFilter === 'Resources'
+                ? infoPanelIcons
+                    .filter((icon) => {
+                      if (typeof selectedEconomy[7] !== 'string') return false;
+                      const resources = selectedEconomy[7]
+                        .split(',')
+                        .map(r => r.trim().toLowerCase());
+                      return resources.some(resource => resource.includes(icon.keyword.toLowerCase()));
+                    })
+                   .slice(0, 24)
+                : infoPanelIcons
+              ).map((icon, index) => {
+                const IconComponent = (iconMap as any)?.[icon.keyword]?.component;
+                const iconColor = (iconMap as any)?.[icon.keyword]?.color || icon.color;
+                return (
+                  <div key={`${subFilter}-icon-${index}-${icon.keyword}`} className="flex flex-col items-center text-xs rounded-lg aspect-square pt-3"  style={{ background: iconColor, color: 'white' }}  >
+                    {IconComponent && React.createElement(IconComponent, { style: { background: iconColor, fontSize: '2.4em' } })}
+                    <span >{icon.keyword.slice(0,11)}</span>
+                  </div>
+                );
+              })}
+          </div>
+         
           {renderPartnerCharts()}
         </>
       );
@@ -170,7 +231,7 @@ const InfoPanel: React.FC<InfoPanelProps> = ({
   return (
     <div
       id="info"
-      className="bg-transparent rounded absolute top-16 left-4 z-10 shadow-md text-xs mt-1 text-white max-w-xs"
+      className="bg-transparent rounded absolute top-16 left-4 z-10 shadow-md text-xs text-white max-w-xs"
       ref={panelRef}
     >
       <div className="text-xs text-white">

@@ -3,7 +3,7 @@ import ReactDOMServer from "react-dom/server";
 import mapboxgl from "mapbox-gl";
 
 interface IconDef {
-  component: React.ReactElement;
+  component: React.ComponentType<any>;
   name: string;
   size?: number;
   color?: string;
@@ -27,6 +27,7 @@ const exportTypeToColor: Record<string, string> = {
   transport: "#374151", 
   trucks: "#fb7185",
   parts: "#f87171", 
+  gear: "#f87171",
 
   wheat: "#facc15", 
   grain: "#fde047", 
@@ -44,8 +45,8 @@ const exportTypeToColor: Record<string, string> = {
   shellfish: "#93c5fd", 
 
   gold: "#facc15", 
-  silver: "#E5E7EB", 
-  copper: "#FB923C", 
+  silver: "#d4d4d4", 
+ 
   zinc: "#94A3B8", 
   metal: "#6B7280", 
   iron: "#6B7280", 
@@ -56,6 +57,8 @@ const exportTypeToColor: Record<string, string> = {
   wood: "#059669", 
   paper: "#059669", 
   pulp: "#059669", 
+  potash: "#a16207",
+  lead: "#6b7280",
 
   electronics: "#0d9488", 
   broadcast: "#14b8a6", 
@@ -74,12 +77,19 @@ const exportTypeToColor: Record<string, string> = {
   chemicals: "#c4b5fd",
   
   REE:  "#fca5a5" , 
+  'rare earths':  "#fca5a5" , 
+  manganese:  "#B5DE8C" ,  
   Mn:  "#B5DE8C" ,  
+  nickel: "#d8b4fe" ,
   Ni:  "#d8b4fe" ,
-  Cu:"#fdba74" , 
+  copper: "#ca8a04" , 
+  Cu: "#ca8a04" , 
+  cobalt: "#a5b4fc" , 
   Co: "#a5b4fc" , 
   Li: "#c7d2fe" , 
+  lithium: "#c7d2fe" , 
   U: "#fcd34d" , 
+  uranium: "#fcd34d" , 
 };
 
 /**
@@ -94,8 +104,15 @@ export async function addReactIconsToMapbox(map: mapboxgl.Map, icons: IconDef[])
     const bgColor = exportTypeToColor[name] || palette[idx % palette.length];
     const iconColor = "#fff";
 
+    if (!component || typeof component !== 'function') {
+      // This will catch undefined or invalid React elements
+      // (component should be a React component class/function at this point)
+      // @ts-ignore
+      console.error('Invalid React component in addReactIconsToMapbox:', name, component);
+    }
+
     const svgString = ReactDOMServer.renderToStaticMarkup(
-      React.cloneElement(component as any, { size: size * 0.76, color: iconColor })
+      React.createElement(component, { size: size * 0.76, color: iconColor })
     );
     const svgBlob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
     const url = URL.createObjectURL(svgBlob);
