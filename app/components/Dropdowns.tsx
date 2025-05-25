@@ -134,39 +134,39 @@ const Dropdowns: React.FC<DropdownsProps> = ({
           {/* <option value="3000000000000">GDP Per Capita</option> */}
           <option value="3000000000000">Government</option>
         </select>
+
+        {/* Subfilter dropdown - only show when economy is selected and country is highlighted */}
+        {gdpFilter == 0 && highlightedCountryId && (
+          <select
+            className="p-2 border rounded w-32"
+            value={
+              activeOverlays.exports ? 'exports' : 
+              activeOverlays.imports ? 'imports' : 
+              activeOverlays.Resources ? 'Resources' : 
+              activeOverlays.Overview ? 'Overview' : 'Overview'
+            }
+            onChange={(e) => {
+              const value = e.target.value;
+              if (value === 'exports') {
+                setActiveOverlays({ exports: true, imports: false, Resources: false, Overview: false });
+              } else if (value === 'imports') {
+                setActiveOverlays({ exports: false, imports: true, Resources: false, Overview: false });
+              } else if (value === 'Resources') {
+                setActiveOverlays({ exports: false, imports: false, Resources: true, Overview: false });
+              } else if (value === 'Overview') {
+                setActiveOverlays({ exports: false, imports: false, Resources: false, Overview: true });
+              }
+            }}
+          >
+            <option value="Overview">Overview</option>
+            <option value="exports">Exports</option>
+            <option value="imports">Imports</option>
+            <option value="Resources">Resources</option>
+          </select>
+        )}
       </div>
       <div>
-        {gdpFilter == 0 && highlightedCountryId && (
-          <div className="flex gap-4 items-center bg-white rounded-lg p-3 shadow">
-            <label className="flex items-center gap-1">
-              <input
-                type="radio"
-                name="overlay"
-                checked={!!activeOverlays.exports}
-                onChange={() => setActiveOverlays({ exports: true, imports: false, Resources: false })}
-              />
-              Exports
-            </label>
-            <label className="flex items-center gap-1">
-              <input
-                type="radio"
-                name="overlay"
-                checked={!!activeOverlays.imports}
-                onChange={() => setActiveOverlays({ exports: false, imports: true, Resources: false })}
-              />
-              Imports
-            </label>
-            <label className="flex items-center gap-1">
-              <input
-                type="radio"
-                name="overlay"
-                checked={!!activeOverlays["Resources"]}
-                onChange={() => setActiveOverlays({ exports: false, imports: false, Resources: true })}
-              />
-              Resources
-            </label>
-          </div>
-        )}
+        {/* Removed the radio button section since it's now a dropdown on the left */}
       </div>
     </div>
   );

@@ -17,7 +17,10 @@ const exportTypeToColor: Record<string, string> = {
   petroleum: "#334155", 
   crude: "#334155", 
   gas: "#52525b",
+  'natural gas': "#52525b",
   coal: "#78716c", 
+
+  dot: "#6B7280",
 
   cars: "#f87171", 
   machinery: "#6B7280",
@@ -50,6 +53,7 @@ const exportTypeToColor: Record<string, string> = {
   zinc: "#94A3B8", 
   metal: "#6B7280", 
   iron: "#6B7280", 
+  'iron ore': "#6B7280",
   steel: "#6B7280",
   minerals: "#9CA3AF", 
   diamonds: "#bfdbfe", 

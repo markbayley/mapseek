@@ -123,7 +123,7 @@ export default function Map({}: MapComponentProps) {
   const [exportIcons, setExportIcons] = useState<Array<{ keyword: string; color: string }>>([]);
   const [importIcons, setImportIcons] = useState<Array<{ keyword: string; color: string }>>([]);
   const [selectedCountryCenter, setSelectedCountryCenter] = useState<[number, number] | null>(null);
-  const [activeOverlays, setActiveOverlays] = useState<{ [key: string]: boolean }>({ exports: false, imports: false, Resources: true });
+  const [activeOverlays, setActiveOverlays] = useState<{ [key: string]: boolean }>({ exports: false, imports: false, Resources: false, Overview: true });
   const [infoPanelIcons, setInfoPanelIcons] = useState<Array<{ keyword: string; color: string }>>([]);
   const [highlightedCountryId, setHighlightedCountryId] = useState<
     string | null
@@ -339,7 +339,7 @@ export default function Map({}: MapComponentProps) {
 
       map.current.on("load", async () => {
         await addDataLayers();
-        setSpinEnabled(true);
+        setSpinEnabled(false);
         setupClickEvents();
         updateLayerVisibility();
         // Do NOT set mapReady here, set it in styledata
@@ -433,7 +433,7 @@ export default function Map({}: MapComponentProps) {
         // Return to default view
         map.current?.flyTo({
           zoom: 2,
-          center: [20, 40], // Return to default center
+          //center: [20, 40], // Return to default center
           essential: true,
         });
         
@@ -681,6 +681,21 @@ export default function Map({}: MapComponentProps) {
         result["Economy"]?.["Inflation rate (consumer prices)"]?.[
           "Inflation rate (consumer prices) 2023"
         ]?.["text"] || "";
+        const inflationSeries = [
+          result["Economy"]?.["Inflation rate (consumer prices)"]?.[
+            "Inflation rate (consumer prices) 2024"
+          ]?.["text"] || "",
+          result["Economy"]?.["Inflation rate (consumer prices)"]?.[
+            "Inflation rate (consumer prices) 2023"
+          ]?.["text"] || "",
+          result["Economy"]?.["Inflation rate (consumer prices)"]?.[
+            "Inflation rate (consumer prices) 2022"
+          ]?.["text"] || "",
+          result["Economy"]?.["Inflation rate (consumer prices)"]?.[
+            "Inflation rate (consumer prices) 2021"
+          ]?.["text"] || ""
+        ];
+             
       const unemployment =
         result["Economy"]?.["Unemployment rate"]?.["Unemployment rate 2023"]?.[
           "text"
@@ -726,7 +741,7 @@ export default function Map({}: MapComponentProps) {
         result["Government"]?.["Capital"]?.["name"]?.["text"] || "";
 
       console.log("Generated economy info for:", NAME);
-      const infoEconomy = [title , overview, unemployment, debt, inflation, gdpcapita, industries, resources]
+      const infoEconomy = [title , overview, unemployment, debt, inflation, gdpcapita, industries, resources, inflationSeries]
       // (
       //   <div className="bg-white shadow-lg rounded-lg p-4 max-w-xs border-l-4 border-amber-500 animate-fade-in transition duration-300 ease-in-out">
       //     <div className="flex justify-between">
@@ -982,21 +997,22 @@ export default function Map({}: MapComponentProps) {
           id: "population-fill",
           type: "fill",
           source: "data",
+         // maxzoom: 3,
           paint: {
             "fill-color": [
               "interpolate",
               ["linear"],
               ["get", "POP_EST"],
               0,
-              "#D1D5DB",
+              "#fef3c7",      // Light yellow
               10000000,
-              "#FBBF24",
+              "#f59e0b",      // Orange
               100000000,
-              "#F97316",
+              "#dc2626",      // Red
               1000000000,
-              "#dc2626",
+              "#7f1d1d",  
             ],
-            "fill-opacity": 0.1,
+            "fill-opacity": 0.5,
           },
         };
 
@@ -1004,25 +1020,26 @@ export default function Map({}: MapComponentProps) {
           id: "gdp-fill",
           type: "fill",
           source: "data",
+          //maxzoom: 3,
           paint: {
             "fill-color": [
               "interpolate",
               ["linear"],
               ["get", "GDP_MD"],
               0,
-              "#D1D5DB",
+              "#d1fae5",      // Light emerald
               100000,
-              "#FBBF24",
+              "#6ee7b7",      // Medium emerald
               1000000,
-              "#F97316",
+              "#10b981",      // Emerald
               10000000,
-              "#dc2626",
+              "#047857", 
             ],
-            "fill-opacity": 0.1,
+            "fill-opacity": 0.5,
           },
         };
 
-        map.current.addLayer(govtLayer);
+        //map.current.addLayer(govtLayer);
         map.current.addLayer(populationLayer);
         map.current.addLayer(gdpLayer);
 
@@ -1436,6 +1453,9 @@ export default function Map({}: MapComponentProps) {
         });
       });
       iconsToUse = matched.slice(0, 24);
+    } else if (activeOverlays.Overview) {
+      // Overview subfilter: show no specific icons, just the overview information
+      iconsToUse = [];
     }
     
     if (iconsToUse.length > 0) {
@@ -1612,6 +1632,7 @@ export default function Map({}: MapComponentProps) {
 
     if (!map.current || !highlightedCountryId || !(activeOverlays.exports || activeOverlays.imports)) {
       // If prerequisites are not met, remove existing highlight layers
+      // Overview and Resources should not show any highlighting
       if (map.current?.getLayer("export-fill")) {
         map.current.removeLayer("export-fill");
       }
@@ -1742,6 +1763,7 @@ export default function Map({}: MapComponentProps) {
       console.log("Arc drawing prerequisites not met.", { map: !!map.current, selectedCountryCenter: !!selectedCountryCenter, isCountriesDataReady, activeOverlays });
 
        // If prerequisites are not met, ensure arcs are removed (redundant with lines above, but safe)
+       // Overview and Resources should not show any arcs
        if (map.current?.getLayer('arcs-layer')) map.current.removeLayer('arcs-layer');
        if (map.current?.getSource('arcs-source')) map.current.removeSource('arcs-source');
       return;
@@ -1940,34 +1962,6 @@ export default function Map({}: MapComponentProps) {
     };
 
   }, [selectedCountryCenter, activeOverlays, isCountriesDataReady, exportPartners, importPartners, animationPaused, exportIcons, importIcons, highlightedCountryId]); // Add highlightedCountryId as dependency
-
-  // Add handleAnimationToggle function
-  const handleAnimationToggle = () => {
-    setAnimationPaused(prev => !prev);
-    
-    // If we're resuming animations and have active arcs, redraw them
-    if (animationPaused && highlightedCountryId && 
-        (activeOverlays.exports || activeOverlays.imports)) {
-      
-      // Cancel existing animations and clear frames
-      cancelAllAnimationFrames();
-      
-      // Trigger redraw by forcing the arc drawing useEffect to run
-      // This is done by temporarily changing subFilter and then changing it back
-      const currentActiveOverlays = activeOverlays;
-      setActiveOverlays({ ...currentActiveOverlays, exports: !currentActiveOverlays.exports });
-      setTimeout(() => {
-        setActiveOverlays(currentActiveOverlays);
-      }, 100);
-    }
-  };
-
-  // Add debug log for mineral overlay hook
-  console.log("Calling useMineralOverlay with:", {
-    topCopperProducers,
-    topGoldProducers,
-    activeOverlays
-  });
 
   // Use the custom hook for mineral overlays (move this call here, after all dependencies are defined)
   useMineralOverlay({
@@ -2382,7 +2376,7 @@ export default function Map({}: MapComponentProps) {
       {
         name: "Bayan Obo Mine",
         coordinates: [109.9667, 41.7833],
-        resources: ["rare earth elements", "iron ore"],
+        resources: ["rare earth elements"],
         ownership: "China Northern Rare Earth High-Tech",
         location: "Inner Mongolia, China",
         details: "World's largest rare earth mine, producing ~120,000 tonnes of rare earth oxides annually. Supplies ~50% of global rare earths."
@@ -2436,29 +2430,385 @@ export default function Map({}: MapComponentProps) {
         ownership: "Mosaic Company",
         location: "Saskatchewan, Canada",
         details: "World's largest potash mine, producing ~5.5 million tonnes annually. Operational since 1962, key for agricultural fertilizers."
-      }
+      },
+
+        // Lithium (Additional Mines)
+  {
+    name: "Goulamina Mine",
+    coordinates: [4.6667, 11.0833],
+    resources: ["lithium"],
+    ownership: "Ganfeng Lithium (50%), Firefinch Limited (50%)",
+    location: "Bamako Region, Mali",
+    details: "One of Africa's largest lithium projects, targeting ~400,000 tonnes of spodumene concentrate annually. Production started in 2024, key for EV battery supply."
+  },
+  {
+    name: "Salar de Atacama",
+    coordinates: [-68.2000, -23.7500],
+    resources: ["lithium"],
+    ownership: "SQM (50%), Albemarle (50%)",
+    location: "Atacama Region, Chile",
+    details: "World's largest lithium brine operation, producing ~70,000 tonnes of lithium carbonate equivalent annually. Supplies ~25% of global lithium."
+  },
+  {
+    name: "Pilgangoora Mine",
+    coordinates: [118.8833, -21.0333],
+    resources: ["lithium"],
+    ownership: "Pilbara Minerals",
+    location: "Western Australia, Australia",
+    details: "Produces ~300,000 tonnes of spodumene concentrate annually. One of Australia's largest hard-rock lithium mines, operational since 2018."
+  },
+
+  // Cobalt (Additional Mines)
+  {
+    name: "Kamoto Mine",
+    coordinates: [25.3833, -10.7167],
+    resources: ["cobalt", "copper"],
+    ownership: "Katanga Mining (Glencore 75%, Gécamines 25%)",
+    location: "Katanga Province, Democratic Republic of Congo",
+    details: "Produces ~20,000 tonnes of cobalt annually. Major copper-cobalt operation, critical for EV battery supply."
+  },
+  {
+    name: "Ambatovy Mine",
+    coordinates: [48.3167, -18.8333],
+    resources: ["cobalt", "nickel"],
+    ownership: "Sherritt International (40%), Sumitomo (32.5%), Korea Resources (27.5%)",
+    location: "Toamasina, Madagascar",
+    details: "Produces ~5,000 tonnes of cobalt annually as a nickel by-product. One of Madagascar's largest mining operations."
+  },
+
+  // Manganese (Additional Mines)
+  {
+    name: "Nsuta Mine",
+    coordinates: [-1.9667, 5.2833],
+    resources: ["manganese"],
+    ownership: "Consolidated Minerals (Tianjin Tewoo 90%, Ghana Manganese Company 10%)",
+    location: "Western Region, Ghana",
+    details: "Produces ~1.5 million tonnes of manganese ore annually. Operational since 1916, key for steel and battery industries."
+  },
+  {
+    name: "Tshipi Borwa Mine",
+    coordinates: [24.7667, -27.3667],
+    resources: ["manganese"],
+    ownership: "Tshipi é Ntle Manganese Mining (Jupiter Mines 49.9%, Ntsimbintle Mining 50.1%)",
+    location: "Northern Cape, South Africa",
+    details: "Produces ~3 million tonnes of manganese ore annually. One of South Africa's largest manganese exporters."
+  },
+
+  // Uranium (Additional Mines)
+  {
+    name: "McArthur River Mine",
+    coordinates: [-105.0333, 57.7667],
+    resources: ["uranium"],
+    ownership: "Cameco (69.805%), Orano (30.195%)",
+    location: "Saskatchewan, Canada",
+    details: "World's largest high-grade uranium mine, producing ~6,800 tonnes annually. Temporarily suspended in 2018, resumed in 2022."
+  },
+  {
+    name: "Rössing Mine",
+    coordinates: [15.0333, -22.4833],
+    resources: ["uranium"],
+    ownership: "China National Uranium Corporation (68.62%), Rio Tinto (15.24%)",
+    location: "Erongo Region, Namibia",
+    details: "Produces ~2,500 tonnes of uranium annually. One of world's longest-running uranium mines, operational since 1976."
+  },
+
+  // Nickel (Additional Mines)
+  {
+    name: "Mincor Kambalda Operations",
+    coordinates: [121.6667, -31.2000],
+    resources: ["nickel"],
+    ownership: "Wyloo Metals",
+    location: "Western Australia, Australia",
+    details: "Produces ~20,000 tonnes of nickel annually. Revived in 2021, key for EV battery supply."
+  },
+  {
+    name: "Voisey's Bay Mine",
+    coordinates: [-56.3167, 56.3333],
+    resources: ["nickel", "copper", "cobalt"],
+    ownership: "Vale",
+    location: "Labrador, Canada",
+    details: "Produces ~40,000 tonnes of nickel annually. Significant cobalt by-product, operational since 2005."
+  },
+
+  // Zinc (Additional Mines)
+  {
+    name: "Tara Mine",
+    coordinates: [-6.7167, 53.5833],
+    resources: ["zinc", "lead"],
+    ownership: "Boliden",
+    location: "County Meath, Ireland",
+    details: "Produces ~200,000 tonnes of zinc annually. Europe's largest zinc mine, operational since 1977."
+  },
+  {
+    name: "Cerro Lindo Mine",
+    coordinates: [-76.1333, -14.5167],
+    resources: ["zinc", "copper", "lead", "silver"],
+    ownership: "Nexa Resources",
+    location: "Ica Region, Peru",
+    details: "Produces ~150,000 tonnes of zinc annually. Major polymetallic mine in Latin America."
+  },
+
+  // Rare Earths (Additional Mines)
+  {
+    name: "Wicheeda Project",
+    coordinates: [-122.0667, 54.5000],
+    resources: ["rare earth elements"],
+    ownership: "Defense Metals Corp",
+    location: "British Columbia, Canada",
+    details: "Development-stage project with ~27 million tonnes of rare earth oxides. Focus on neodymium and praseodymium, potential start by 2028."
+  },
+  {
+    name: "Halleck Creek Project",
+    coordinates: [-105.6667, 41.3333],
+    resources: ["rare earth elements"],
+    ownership: "American Rare Earths",
+    location: "Wyoming, USA",
+    details: "Contains ~4.7 million tonnes of rare earth oxides. Low-thorium deposit, under exploration for future production."
+  },
+
+  // Potash (Additional Mines)
+  {
+    name: "Cory Mine",
+    coordinates: [-104.3167, 52.0833],
+    resources: ["potash"],
+    ownership: "Nutrien",
+    location: "Saskatchewan, Canada",
+    details: "Produces ~3 million tonnes of potash annually. Part of Saskatchewan's potash belt, key for fertilizer production."
+  },
+  {
+    name: "Belaruskali Soligorsk Mine",
+    coordinates: [27.5667, 52.7833],
+    resources: ["potash"],
+    ownership: "Belaruskali",
+    location: "Minsk Region, Belarus",
+    details: "Produces ~7 million tonnes of potash annually. One of world's largest potash operations, supplying global fertilizer markets."
+  },
+
+  //Silver (Additional Mines)
+  {
+    name: "San Cristobal Mine",
+    coordinates: [-69.6667, -17.4667],
+    resources: ["silver"],
+    ownership: "Pan American Silver",
+    location: "Potosí, Bolivia",
+    details: "Produces ~100 million ounces of silver annually. One of world's largest silver mines, operational since 1921."
+  },
+  {
+    name: "Polkowice-Sieroszowice Mine",
+    coordinates: [16.7667, 51.3667],
+    resources: ["silver"],
+    ownership: "KGHM",
+    location: "Silesia, Poland",
+    details: "The Polkowice-Sieroszowice Mine is a silver mine located in Silesia, Poland. Owned by KGHM, the greenfield project produced an estimated 1.000Mt of ROM in 2023. It had an estimated production of 1.000Mt of silver in 2023"
+  },
+  {
+    name: "Peñasquito Mine",
+    coordinates: [-101.716414, 24.657013],
+    resources: ["silver"],
+    ownership: "Newmont/Silver Standard Resources",
+    location: "San Dimas, Mexico",
+    details: "The Peñasquito Mine is a silver mine located in San Dimas, Mexico. Owned by Newmont/Silver Standard Resources, the greenfield project produced an estimated 1.000Mt of ROM in 2023. It had an estimated production of 1.000Mt of silver in 2023"
+  },
+  {
+    name: "Cannington Mine",
+    coordinates: [140.906505, -21.856488],
+    resources: ["silver"],
+    ownership: "Newmont",
+    location: "Queensland, Australia",
+    details: "The Cannington Mine is a gold mine located in Queensland, Australia. Owned by Newmont, the greenfield project produced an estimated 1.000Mt of ROM in 2023. It had an estimated production of 1.000Mt of gold in 2023"
+  },
+  {
+    name: "Nevada Gold Mines",
+    coordinates: [-115.783889, 40.829256],
+    resources: ["gold"],
+    ownership: "Newmont",
+    location: "Nevada, USA",
+    details: "The Nevada Gold Mines is a gold mine located in Nevada, USA. Owned by Newmont, the greenfield project produced an estimated 1.000Mt of ROM in 2023. It had an estimated production of 1.000Mt of gold in 2023"
+  },
+  {
+    name: "Lihir Mine",
+    coordinates: [147.3667, -7.3667],
+    resources: ["gold"],
+    ownership: "Newcrest",
+    location: "Papua New Guinea",
+    details: "The Lihir Mine is a gold mine located in Papua New Guinea. Owned by Newcrest, the greenfield project produced an estimated 1.000Mt of ROM in 2023. It had an estimated production of 1.000Mt of gold in 2023"
+  },
+  //Diamond mines
+  {
+    name: "Kao Mine",
+    coordinates: [28.629570, -29.021307],
+    resources: ["diamonds"],
+    ownership: "Storm Mountain Diamonds",
+    location: "Butha-Buthe, Lesotho",
+    details: "The Kao Mine is a surface mine situated in Butha-Buthe, Lesotho. Owned by Namakwa Diamonds, the brownfield mine produced an estimated 13.31 million carats of diamond in 2023. The mine will operate until 2034"
+  },
+  {
+    name: "Jwaneng Mine",
+    coordinates: [24.695647, -24.532317],
+    resources: ["diamonds"],
+    ownership: "State of Botswana",
+    location: "Botswana",
+    details: "Located in Kgalagadi District, Botswana, the Jwaneng Mine is owned by Government of Botswana. The surface mine produced an estimated 11.86 million carats of diamond in 2023. The mine will operate until 2036"
+  },
+  //Africa mines
+  {
+    name: "Catoca Mine",
+    coordinates: [20.300057, -9.407280],
+    resources: ["diamonds"],
+    ownership: "Endiama EP",
+    location: "Angola",
+    details: "The Catoca Mine is a surface mine situated in Lunda Sul, Angola. The greenfield mine produced an estimated 6.42 million carats of diamond in 2023. The expected mine closure date is 2037"
+  },
+
+  //Asia mines
+  {
+    name: "Green Mine",
+    coordinates: [104.2667, 30.6667],
+    resources: ["phosphate"],
+    ownership: "China National Gold Group",
+    location: "Sichuan, China",
+    details: "The Green Mine is a phosphate mine owned by Sichuan Lomon. Located in Sichuan, China, the greenfield mine produced approximately 61.933Mt of ROM in 2023. It had an estimated production of 37.16 mtpa of phosphate in 2023"
+  },
+
+  {
+    name: "Northern Shaanxi Mine",
+    coordinates: [110.1667, 34.0667],
+    resources: ["coal"],
+    ownership: "Shaanxi Gold Mining",
+    location: "Shaanxi, China",
+    details: "The Northern Shaanxi Mine is a coal mine located in Shaanxi, China. Owned by Shaanxi Coal Industry Group, the greenfield project produced an estimated 10.000Mt of ROM in 2023. It had an estimated production of 1.5 million tonnes of coal in 2023"
+  },
+  {
+    name: "Julong Copper Mine",
+    coordinates: [91.090073, 29.636152],
+    resources: ["copper"],
+    ownership: "China National Gold Group",
+    location: "Tibet, China",
+    details: "The Julong Copper Mine is a copper mine located in Tibet, China. Owned by Zijin Mining Group, the greenfield project produced an estimated 43.566Mt of ROM in 2023."
+  },
+  {
+    name: "Weda Bay Project",
+    coordinates: [127.957318, 0.548746],
+    resources: ["nickel"],
+    ownership: "PT Vale Indonesia Tbk",
+    location: "Sulawesi, Indonesia",
+    details: "The Weda Bay Project is a nickel mining project in Maluku, Indonesia. The greenfield project is owned by Tsingshan Holding Group and is due to operate until 2069. The mine produced an estimated 39.709Mt of ROM in 2023. It had an estimated production of 516.7 thousand tonnes of nickel in 2023"
+  },
+  // Oil Operations
+  {
+    name: "Orinoco Belt",
+  coordinates: [-64.826469, 7.699111],
+  resources: ["petroleum"],
+  ownership: "State Owned",
+  location: "Venuezala",
+details: "The Orinoco Belt is a territory in the southern strip of the eastern Orinoco River Basin in Venezuela which overlies the world's largest deposits of petroleum."
+  },
+  {
+    name: "Ghawar Field",
+    coordinates: [49.9833, 25.4333],
+    resources: ["petroleum"],
+    ownership: "Saudi Aramco",
+    location: "Eastern Province, Saudi Arabia",
+    details: "World's largest oil field, producing ~3.8 million barrels per day (bpd). Discovered in 1948, holds ~70 billion barrels of reserves."
+  },
+  {
+    name: "Burgan Field",
+    coordinates: [47.9833, 29.0667],
+    resources: ["petroleum"],
+    ownership: "Kuwait Oil Company",
+    location: "Kuwait",
+    details: "Second-largest oil field globally, producing ~1.7 million bpd. Discovered in 1938, holds ~66 billion barrels of reserves."
+  },
+  {
+    name: "Prudhoe Bay Oil Field",
+    coordinates: [-148.3333, 70.3167],
+    resources: ["petroleum", "natural gas"],
+    ownership: "BP (26%), ExxonMobil (36%), ConocoPhillips (36%)",
+    location: "North Slope, Alaska, USA",
+    details: "Largest oil field in North America, producing ~500,000 bpd. Discovered in 1968, also produces natural gas."
+  },
+  {
+    name: "Safaniya Field",
+    coordinates: [49.3167, 28.1333],
+    resources: ["petroleum"],
+    ownership: "Saudi Aramco",
+    location: "Persian Gulf, Saudi Arabia",
+    details: "World's largest offshore oil field, producing ~1.2 million bpd. Discovered in 1951, holds ~37 billion barrels of reserves."
+  },
+  {
+    name: "Rumaila Field",
+    coordinates: [47.4167, 30.1667],
+    resources: ["petroleum"],
+    ownership: "Iraq National Oil Company, BP, CNPC",
+    location: "Basra, Iraq",
+    details: "Produces ~1.5 million bpd. One of Iraq's largest oil fields, operational since 1953, with ~17 billion barrels of reserves."
+  },
+
+  // Gas Operations
+  {
+    name: "South Pars/North Dome Field",
+    coordinates: [52.5833, 26.2833],
+    resources: ["natural gas", "petroleum"],
+    ownership: "QatarEnergy (Qatar), NIOC (Iran)",
+    location: "Persian Gulf, Qatar/Iran",
+    details: "World's largest gas field, producing ~1.8 trillion cubic feet of gas annually. Shared between Qatar and Iran, holds ~1,800 trillion cubic feet of reserves."
+  },
+  {
+    name: "Urengoy Field",
+    coordinates: [74.5333, 65.9667],
+    resources: ["natural gas", "petroleum"],
+    ownership: "Gazprom",
+    location: "Yamal-Nenets Region, Russia",
+    details: "Produces ~250 billion cubic meters of gas annually. One of world's largest gas fields, operational since 1978."
+  },
+  {
+    name: "Turkmenistan Galkynysh Field",
+    coordinates: [53.8333, 37.6667],
+    resources: ["natural gas"],
+    ownership: "Türkmengaz",
+    location: "Mary Province, Turkmenistan",
+    details: "Produces ~80 billion cubic meters of gas annually. Second-largest gas field globally, with ~700 trillion cubic feet of reserves."
+  },
+  {
+    name: "Troll Field",
+    coordinates: [3.7167, 60.6667],
+    resources: ["natural gas", "petroleum"],
+    ownership: "Equinor (30.58%), Petoro (56%), Shell (8.1%)",
+    location: "North Sea, Norway",
+    details: "Produces ~40 billion cubic meters of gas annually. Europe's largest offshore gas field, operational since 1996."
+  },
+  {
+    name: "Ichthys Field",
+    coordinates: [123.6167, -12.6667],
+    resources: ["natural gas", "condensate"],
+    ownership: "INPEX (62.245%), TotalEnergies (30%)",
+    location: "Timor Sea, Australia",
+    details: "Produces ~8.9 million tonnes of LNG annually. Operational since 2018, with ~12 trillion cubic feet of gas reserves."
+  }
     
   ]
 
   // Mine gear icon effect: only run when map is ready and style is loaded
   useEffect(() => {
     if (!map.current || !mapReady) return;
-    const gearSvg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512' fill='#6B7280'><path d='M487.4 315.7l-42.2-24.4c2.7-14.1 4.1-28.7 4.1-43.3s-1.4-29.2-4.1-43.3l42.2-24.4c15.1-8.7 21.1-27.6 13.7-43.2l-34.1-70.2c-7.5-15.5-25.7-22.6-41.2-15.9l-42.2 17.7c-22.2-17.1-46.7-30.6-73.2-39.7V24.6C312.6 10.9 301.7 0 288 0h-64c-13.7 0-24.6 10.9-24.6 24.6v49.2c-26.5 9.1-51 22.6-73.2 39.7l-42.2-17.7c-15.5-6.7-33.7.4-41.2 15.9l-34.1 70.2c-7.4 15.6-1.4 34.5 13.7 43.2l42.2 24.4C24.6 218.8 23.2 233.4 23.2 248s1.4 29.2 4.1 43.3l-42.2 24.4c-15.1 8.7-21.1 27.6-13.7 43.2l34.1 70.2c7.5 15.5 25.7 22.6 41.2 15.9l42.2-17.7c22.2 17.1 46.7 30.6 73.2 39.7v49.2c0 13.7 10.9 24.6 24.6 24.6h64c13.7 0 24.6-10.9 24.6-24.6v-49.2c26.5-9.1 51-22.6 73.2-39.7l42.2 17.7c15.5 6.7 33.7-.4 41.2-15.9l34.1-70.2c7.4-15.6 1.4-34.5-13.7-43.2zM256 336c-48.6 0-88-39.4-88-88s39.4-88 88-88 88 39.4 88 88-39.4 88-88 88z'/></svg>`;
+    
     const mineFeatures = mineSites.map((site, i) => ({
       type: 'Feature' as const,
-      geometry: { type: 'Point' as const, coordinates: site.coordinates },
+      geometry: { 
+        type: 'Point' as const, 
+        coordinates: site.coordinates // Dot icons at original position (above)
+      },
       properties: { name: site.name, id: `mine-${i}`, details: site.details, location: site.location },
     }));
-    let animationId: number;
-    let rotation = 0;
-    // Move addMineLayer definition here, before addGearImageAndLayer
+    let mineLayersAdded = false; // Flag to prevent repeated additions
+    let clickHandlersAdded = false; // Flag to prevent repeated event listeners
+
+    // Move addMineLayer definition here, before addDotImageAndLayer
     function addMineLayer() {
-      if (!map.current) return;
+      if (!map.current || mineLayersAdded) return;
+      
       // Add mine sites as a GeoJSON source
-      if (map.current.getSource('mine-sites')) {
-        (map.current.getSource('mine-sites') as mapboxgl.GeoJSONSource).setData({ type: 'FeatureCollection', features: mineFeatures });
-        console.log('Updated mine-sites source');
-      } else {
+      if (!map.current.getSource('mine-sites')) {
         map.current.addSource('mine-sites', {
           type: 'geojson',
           data: { type: 'FeatureCollection', features: mineFeatures },
@@ -2466,35 +2816,122 @@ export default function Map({}: MapComponentProps) {
         console.log('Added mine-sites source');
       }
 
-      // Add a symbol layer for the gear icons
-      if (!map.current.getLayer('mine-gears')) {
-        map.current.addLayer({
-          id: 'mine-gears',
-          type: 'symbol',
-          source: 'mine-sites',
-          minzoom: 4, // Only show at zoom >= 4
-          layout: {
-            'icon-image': 'gear-icon',
-            'icon-size': 0.8,
-            'icon-allow-overlap': true,
-            'icon-ignore-placement': true,
-            'icon-rotate': ['get', 'rotation'],
-          },
+      // --- Add mine resource icons as a new layer ---
+      // Prepare features for all resources at all mines, offset horizontally
+      type ResourceFeature = GeoJSON.Feature<GeoJSON.Point, { resource: string; icon: string; offset: [number, number]; mine: string; iconSize: number }>;
+      const resourceFeatures: ResourceFeature[] = [];
+      const resourceIconNames = new Set<string>();
+      
+      mineSites.forEach(site => {
+        site.resources.forEach((resource, idx) => {
+          // Use iconMap to get the icon name
+          const iconKey = Object.keys(iconMap).find(k => k.toLowerCase() === resource.toLowerCase());
+          if (iconKey && (iconMap as any)[iconKey]) {
+            const iconName = (iconMap as any)[iconKey].name;
+            resourceIconNames.add(iconName);
+            
+            // Calculate horizontal offset for this resource (spread them out horizontally)
+            const offsetX = (idx - (site.resources.length - 1) / 2) * 2 - 0.5; // Slightly left of dot
+            const offsetY = 0.5; // Below the dot icon
+            
+            // Calculate descending icon size - first icon largest, then progressively smaller
+            const baseSize = 1.2; // Starting size for first icon
+            const sizeDecrement = 0.7; // How much smaller each subsequent icon gets
+            const minSize = 0.7; // Minimum size to prevent icons from becoming too small
+            const iconSize = Math.max(baseSize - (idx * sizeDecrement), minSize);
+            
+            resourceFeatures.push({
+              type: 'Feature',
+              geometry: {
+                type: 'Point',
+                coordinates: [site.coordinates[0] + offsetX, site.coordinates[1] + offsetY]
+              },
+              properties: {
+                resource: resource,
+                icon: iconName,
+                offset: [offsetX, offsetY],
+                mine: site.name,
+                iconSize: iconSize // Add size property to each feature
+              }
+            });
+          }
         });
-        console.log('Added mine-gears layer');
+      });
+
+      // Add all resource icons to Mapbox if not already present
+      const iconsToAdd = Array.from(resourceIconNames)
+        .map(name => {
+          const iconDef = Object.values(iconMap).find(i => i.name === name);
+          return iconDef ? { component: iconDef.component as IconType, name: iconDef.name, color: iconDef.color } : null;
+        })
+        .filter((iconDef): iconDef is { component: IconType; name: string; color: string } => iconDef !== null);
+      
+      // Add the dot icon to the icons to add
+      const dotIcon = iconMap.dot;
+      if (dotIcon) {
+        iconsToAdd.push({ component: dotIcon.component as IconType, name: dotIcon.name, color: dotIcon.color });
+      }
+      
+      if (iconsToAdd.length > 0) {
+        addReactIconsToMapbox(map.current, iconsToAdd);
       }
 
-      // Add a symbol layer for the mine name labels (below the icon, no halo)
+      // Add resource features as a new GeoJSON source
+      if (!map.current.getSource('mine-resources')) {
+        map.current.addSource('mine-resources', {
+          type: 'geojson',
+          data: { type: 'FeatureCollection', features: resourceFeatures },
+        });
+      }
+
+      // Add a symbol layer for the dot icons first (so they appear behind resource icons)
+      if (!map.current.getLayer('mine-dots')) {
+        map.current.addLayer({
+          id: 'mine-dots',
+          type: 'symbol',
+          source: 'mine-sites',
+          minzoom: 3, // Only show at zoom >= 3
+          layout: {
+            'icon-image': 'dot',
+            'icon-size': 1.2,
+            'icon-allow-overlap': true,
+            'icon-ignore-placement': true,
+          },
+          paint: {
+            'icon-opacity': 0.3, // Make dot semi-transparent
+          },
+        });
+        console.log('Added mine-dots layer');
+      }
+
+      // Add a symbol layer for the resource icons (added after dots to appear on top)
+      if (!map.current.getLayer('mine-resources')) {
+        map.current.addLayer({
+          id: 'mine-resources',
+          type: 'symbol',
+          source: 'mine-resources',
+          minzoom: 3, // Only show at zoom >= 3
+          layout: {
+            'icon-image': ['get', 'icon'],
+            'icon-size': ['get', 'iconSize'], // Use the calculated size from feature properties
+            'icon-allow-overlap': true,
+            'icon-ignore-placement': true,
+          },
+        });
+        console.log('Added mine-resources layer');
+      }
+
+      // Add a symbol layer for the mine name labels (below the resource icons)
       if (!map.current.getLayer('mine-labels')) {
         map.current.addLayer({
           id: 'mine-labels',
           type: 'symbol',
           source: 'mine-sites',
-          minzoom: 3, // Only show at zoom >= 4
+          minzoom: 3, // Only show at zoom >= 3
           layout: {
             'text-field': ['get', 'name'],
             'text-size': 13,
-            'text-offset': [0, 2.2],
+            'text-offset': [0, 2.5], // Below the resource icons
             'text-anchor': 'top',
             'text-allow-overlap': true,
           },
@@ -2506,87 +2943,216 @@ export default function Map({}: MapComponentProps) {
         console.log('Added mine-labels layer');
       }
 
-      // Animate rotation (slower)
-      function animateGears() {
-        rotation = (rotation + 0.2) % 360; // much slower
-        const features = mineFeatures.map(f => ({ ...f, properties: { ...f.properties, rotation }, type: 'Feature' as const, geometry: { ...f.geometry, type: 'Point' as const } }));
-        (map.current?.getSource('mine-sites') as mapboxgl.GeoJSONSource)?.setData({ type: 'FeatureCollection', features });
-        animationId = requestAnimationFrame(animateGears);
-      }
-    // animateGears();
+      // Add click handlers only once
+      if (!clickHandlersAdded) {
+        // Add invisible larger clickable areas for easier interaction
+        if (!map.current.getSource('mine-clickable-areas')) {
+          const clickableFeatures = mineSites.map((site, i) => ({
+            type: 'Feature' as const,
+            geometry: { 
+              type: 'Point' as const, 
+              coordinates: site.coordinates // Same position as dot icons (above)
+            },
+            properties: { 
+              name: site.name, 
+              id: `mine-clickable-${i}`, 
+              details: site.details, 
+              location: site.location,
+              ownership: site.ownership 
+            },
+          }));
 
-      // Add popup on click
-      map.current.on('click', 'mine-gears', (e) => {
-        if (!e.features || !e.features.length) return;
-        const feature = e.features[0];
-        const coordinates = (feature.geometry.type === 'Point' && Array.isArray(feature.geometry.coordinates) && feature.geometry.coordinates.length === 2)
-          ? feature.geometry.coordinates as [number, number]
-          : [0, 0];
-        const props = feature.properties as { name?: string; location?: string; details?: string };
-        const name = props?.name || '';
-        const location = props?.location || '';
-        const details = props?.details || '';
-        // Create popup content
-        const popupContent = `
-          <div style="background:white;padding:12px;border-radius:12px;min-width:220px;max-width:320px;">
-            <div style="font-weight:bold;font-size:1.1em;margin-bottom:4px;">${name}</div>
-            <div style="color:#666;font-size:0.95em;margin-bottom:4px;">${location}</div>
-            <div style="color:#333;font-size:0.97em;">${details}</div>
-          </div>
-        `;
-        new mapboxgl.Popup({ closeOnClick: true })
-          .setLngLat(coordinates as [number, number])
-          .setHTML(popupContent)
-          .addTo(map.current!);
-      });
-      // Close popup on map click elsewhere
-      map.current.on('click', (e) => {
-        const features = map.current?.queryRenderedFeatures(e.point, { layers: ['mine-gears'] });
-        if (!features || !features.length) {
-          const popups = document.getElementsByClassName('mapboxgl-popup');
-          for (let i = 0; i < popups.length; i++) {
-            (popups[i] as HTMLElement).remove();
-          }
+          map.current.addSource('mine-clickable-areas', {
+            type: 'geojson',
+            data: { type: 'FeatureCollection', features: clickableFeatures },
+          });
+
+          // Add invisible larger circles for easier clicking
+          map.current.addLayer({
+            id: 'mine-clickable-circles',
+            type: 'circle',
+            source: 'mine-clickable-areas',
+            minzoom: 3,
+            paint: {
+              'circle-radius': 35, // Much larger clickable area
+              'circle-opacity': 0, // Invisible
+              'circle-stroke-width': 0,
+            },
+          });
         }
-      });
+
+        let currentPopup: mapboxgl.Popup | null = null;
+
+        // Function to create and show popup
+        const showPopup = (e: mapboxgl.MapLayerMouseEvent) => {
+          if (!e.features || !e.features.length) return;
+          
+          // Prevent map interactions when clicking on mine areas
+          e.preventDefault();
+          
+          const feature = e.features[0];
+          const coordinates = (feature.geometry.type === 'Point' && Array.isArray(feature.geometry.coordinates) && feature.geometry.coordinates.length === 2)
+            ? feature.geometry.coordinates as [number, number]
+            : [0, 0];
+          const props = feature.properties as { name?: string; location?: string; details?: string; ownership?: string };
+          const name = props?.name || '';
+          const location = props?.location || '';
+          const details = props?.details || '';
+          const ownership = props?.ownership || '';
+          
+          // Close existing popup
+          if (currentPopup) {
+            currentPopup.remove();
+          }
+          
+          // Create popup content with hover-friendly styling
+          const popupContent = `
+            <div id="mine-popup" style="
+              background: white;
+              padding: 16px;
+              border-radius: 12px;
+              min-width: 280px;
+              max-width: 350px;
+              box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+              border: 1px solid #e5e7eb;
+              font-family: system-ui, -apple-system, sans-serif;
+              cursor: default;
+            ">
+              <div style="font-weight: bold; font-size: 1.2em; margin-bottom: 8px; color: #1f2937;">${name}</div>
+              <div style="color: #6b7280; font-size: 0.95em; margin-bottom: 8px; font-weight: 500;">${location}</div>
+              ${ownership ? `<div style="color: #374151; font-size: 0.9em; margin-bottom: 8px;"><strong>Owner:</strong> ${ownership}</div>` : ''}
+              <div style="color: #374151; font-size: 0.95em; line-height: 1.4;">${details}</div>
+              <div style="
+                margin-top: 12px; 
+                padding-top: 8px; 
+                border-top: 1px solid #f3f4f6; 
+                font-size: 0.8em; 
+                color: #9ca3af;
+                text-align: center;
+              ">Click anywhere outside to close</div>
+            </div>
+          `;
+          
+          currentPopup = new mapboxgl.Popup({ 
+            closeOnClick: false, // Don't auto-close on map click
+            closeButton: true,   // Show close button
+            maxWidth: '400px',
+            className: 'mine-popup'
+          })
+            .setLngLat(coordinates as [number, number])
+            .setHTML(popupContent)
+            .addTo(map.current!);
+
+          // Make popup hoverable - prevent it from closing when mouse is over it
+          const popupElement = currentPopup.getElement();
+          if (popupElement) {
+            popupElement.addEventListener('mouseenter', () => {
+              // Keep popup open when hovering over it
+            });
+            
+            popupElement.addEventListener('mouseleave', () => {
+              // Optional: auto-close after a delay when mouse leaves popup
+              setTimeout(() => {
+                if (currentPopup && !popupElement.matches(':hover')) {
+                  currentPopup.remove();
+                  currentPopup = null;
+                }
+              }, 1000); // 1 second delay
+            });
+          }
+        };
+
+        // Add click handlers for both the dot icons and larger clickable areas
+        map.current.on('click', 'mine-dots', showPopup);
+        map.current.on('click', 'mine-clickable-circles', showPopup);
+        
+        // Add hover functionality - show popup on hover
+        map.current.on('mouseenter', 'mine-clickable-circles', showPopup);
+        map.current.on('mouseenter', 'mine-dots', showPopup);
+        
+        // Add hover effects for better UX
+        map.current.on('mouseenter', 'mine-clickable-circles', () => {
+          if (map.current) {
+            map.current.getCanvas().style.cursor = 'pointer';
+          }
+        });
+        
+        map.current.on('mouseleave', 'mine-clickable-circles', () => {
+          if (map.current) {
+            map.current.getCanvas().style.cursor = '';
+          }
+        });
+
+        // Hide popup when mouse leaves the clickable area (with delay)
+        map.current.on('mouseleave', 'mine-clickable-circles', () => {
+          setTimeout(() => {
+            if (currentPopup) {
+              const popupElement = currentPopup.getElement();
+              if (popupElement && !popupElement.matches(':hover')) {
+                currentPopup.remove();
+                currentPopup = null;
+              }
+            }
+          }, 200); // Short delay to allow moving to popup
+        });
+
+        map.current.on('mouseleave', 'mine-dots', () => {
+          setTimeout(() => {
+            if (currentPopup) {
+              const popupElement = currentPopup.getElement();
+              if (popupElement && !popupElement.matches(':hover')) {
+                currentPopup.remove();
+                currentPopup = null;
+              }
+            }
+          }, 200); // Short delay to allow moving to popup
+        });
+
+        // Close popup when clicking elsewhere on the map
+        map.current.on('click', (e) => {
+          const features = map.current?.queryRenderedFeatures(e.point, { 
+            layers: ['mine-dots', 'mine-clickable-circles'] 
+          });
+          if (!features || !features.length) {
+            if (currentPopup) {
+              currentPopup.remove();
+              currentPopup = null;
+            }
+          }
+        });
+        
+        clickHandlersAdded = true;
+      }
+
+      mineLayersAdded = true; // Mark as added to prevent repeated additions
     }
 
-    // Now define addGearImageAndLayer, which can call addMineLayer
-    function addGearImageAndLayer() {
+    // Now define addDotImageAndLayer, which can call addMineLayer
+    function addDotImageAndLayer() {
       if (!map.current) return;
-      if (!map.current.hasImage('gear-icon')) {
-        const img = new window.Image(48, 48);
-        const svg = new Blob([gearSvg], { type: 'image/svg+xml' });
-        const url = URL.createObjectURL(svg);
-        img.onload = () => {
-          if (!map.current) return;
-          if (!map.current.hasImage('gear-icon')) {
-            map.current.addImage('gear-icon', img, { pixelRatio: 2 });
-            console.log('Added gear-icon image');
-          }
-          URL.revokeObjectURL(url);
-          addMineLayer();
-        };
-        img.onerror = (e) => {
-          console.error('Failed to load gear-icon image', e);
-        };
-        img.src = url;
-      } else {
-        addMineLayer();
+      // The dot icon is already added via addReactIconsToMapbox in addMineLayer
+      addMineLayer();
+    }
+
+    // Add on style load only once
+    const mapInstance = map.current;
+    function handleStyleData() {
+      if (!mineLayersAdded) {
+        console.log('Map style loaded, adding mine sites and dot icons');
+        addDotImageAndLayer();
       }
     }
+    
+    mapInstance.on('styledata', handleStyleData);
+    // Initial add
+    handleStyleData();
 
-       // Add on style load and style reload
-       const mapInstance = map.current;
-       function handleStyleData() {
-         console.log('Map style loaded or reloaded, adding mine sites and gear icons');
-         addGearImageAndLayer();
-       }
-       mapInstance.on('styledata', handleStyleData);
-       // Initial add
-       handleStyleData();
-
-    // ... rest of your useEffect ...
+    // Cleanup function
+    return () => {
+      if (mapInstance) {
+        mapInstance.off('styledata', handleStyleData);
+      }
+    };
   }, [mapReady]);
 
   useEffect(() => {
@@ -2651,8 +3217,8 @@ export default function Map({}: MapComponentProps) {
           infoPanelIconElements={infoPanelIconElementsState}
         />
       )}
-      {/* Show Legend only if Resources is active and no country is selected */}
-      {activeOverlays.Resources && !highlightedCountryId && <Legend />}
+      {/* Show Legend only if Resources or Overview is active and no country is selected */}
+      {(activeOverlays.Resources || activeOverlays.Overview) && !highlightedCountryId && <Legend />}
 
       <button
         id="btn-spin"
@@ -2660,15 +3226,6 @@ export default function Map({}: MapComponentProps) {
         className="absolute bottom-6 right-4 bg-violet-800 text-white p-2 px-4 rounded-lg"
       >
         {spinEnabled ? "Pause" : "Rotate"}
-      </button>
-
-      {/* Animation toggle button */}
-      <button
-        id="btn-animation-toggle"
-        onClick={handleAnimationToggle}
-        className="absolute bottom-6 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white p-2 px-4 rounded-lg"
-      >
-        {animationPaused ? "Resume Animation" : "Pause Animation"}
       </button>
       
       {/* Only render icon components when a country is selected */}

@@ -5,7 +5,7 @@ import { LuMilk, LuBeef, LuBean  } from 'react-icons/lu';
 import {GiWoodPile, GiWaterRecycling, GiCorn, GiGoldMine, GiMedicines, GiDoubleFish, GiMetalBar, GiBeetleShell, GiTurbine, GiWireCoil, GiBowlOfRice, GiSugarCane, GiSheep, GiButter, GiBeerStein, GiCoconuts, GiBananaBunch, GiPearlNecklace, GiCigarette, GiRubberBoot, GiChemicalDrop, GiOre, GiMinerals, GiStoneBlock, GiShrimp } from "react-icons/gi";
 import { BsMinecartLoaded } from "react-icons/bs";
 import { MdOilBarrel } from "react-icons/md";
-import { TbHexagonLetterR, TbHexagonLetterM, TbHexagonLetterN, TbHexagonLetterC, TbHexagonLetterL, TbHexagonLetterU, TbHexagonLetterZ, TbHexagonLetterI, TbHexagonLetterP } from 'react-icons/tb';
+import { TbHexagonLetterR, TbHexagonLetterM, TbHexagonLetterN, TbHexagonLetterC, TbHexagonLetterL, TbHexagonLetterU, TbHexagonLetterZ, TbHexagonLetterI, TbHexagonLetterP, TbPointFilled } from 'react-icons/tb';
 
 interface MapComponentProps {
     searchTerm: string;
@@ -21,7 +21,9 @@ export const iconMap = {
     'natural gas': { component: FaFire, name: "natural gas", color: "#52525b" },
     coal: { component: BsMinecartLoaded, name: "coal", color: "#78716c" },
     hydropower: { component: GiWaterRecycling, name: "hydropower", color: "#06b6d4" },
-
+    
+    dot: { component: TbPointFilled, name: "dot", color: "#6B7280" },
+    
     cars: { component: FaCar, name: "cars", color: "#f87171" },
     iron: { component: TbHexagonLetterI, name: "iron", color: "#6B7280" },
     'iron ore': { component: TbHexagonLetterI, name: "iron ore", color: "#6B7280" },

@@ -5,6 +5,7 @@ import ExportPartnersChart from "./ExportPartnersChart";
 import ImportPartnersChart from "./ImportPartnersChart";
 import { CircularProgress } from "./CircularProgress";
 import { iconMap } from '../utils/iconMap';
+import InflationChart from './InflationChart';
 
 interface InfoPanelProps {
   gdpFilter: number;
@@ -107,7 +108,7 @@ const InfoPanel: React.FC<InfoPanelProps> = ({
         }
       });
     } else {
-      // Show all sections
+      // Show all sections for Overview, Resources, or default state
       paragraphs.forEach(p => {
         p.style.display = '';
       });
@@ -125,7 +126,12 @@ const InfoPanel: React.FC<InfoPanelProps> = ({
       return <ExportPartnersChart exportsPartners={exportsPartners || ''}/>; 
     } else if (subFilter === 'imports') {
       return <ImportPartnersChart importsPartners={importsPartners || ''}/>; 
+    } else if (subFilter === 'Overview') {
+      // Overview: don't show any specific partner charts
+      return null;
     }
+    // Default case (Resources or other): don't show charts
+    return null;
   };
   
   // Custom component to render the economy info with conditional sections
@@ -209,7 +215,9 @@ const InfoPanel: React.FC<InfoPanelProps> = ({
                 );
               })}
           </div>
-         
+          {selectedEconomy[8] && subFilter === 'Overview' && (
+            <InflationChart inflationSeries={selectedEconomy[8]} />
+          )}
           {renderPartnerCharts()}
         </>
       );
