@@ -55,6 +55,49 @@ function Legend() {
         </div>
       </div>
 
+      <div id="inflation-legend" className="hidden">
+        <h5 className="font-semibold pb-1">Inflation Rate</h5>
+        <div className="flex items-center justify-end gap-x-2">
+          <div style={{ backgroundColor: '#1e40af' }} className="h-5 w-5 inline-block rounded"></div> 
+          -10%
+          <br />
+          <div style={{ backgroundColor: '#3b82f6' }} className="h-5 w-5 inline-block rounded"></div> 
+          0%
+          <br />
+          <div style={{ backgroundColor: '#fbbf24' }} className="h-5 w-5 inline-block rounded"></div> 
+          5%
+          <br />
+          <div style={{ backgroundColor: '#f59e0b' }} className="h-5 w-5 inline-block rounded"></div> 
+          10%
+          <br />
+          <div style={{ backgroundColor: '#dc2626' }} className="h-5 w-5 inline-block rounded"></div> 
+          20%
+          <br />
+          <div style={{ backgroundColor: '#7f1d1d' }} className="h-5 w-5 inline-block rounded"></div> 
+          30%+
+        </div>
+      </div>
+
+      <div id="unemployment-legend" className="hidden">
+        <h5 className="font-semibold pb-1">Unemployment Rate</h5>
+        <div className="flex items-center justify-end gap-x-2">
+          <div style={{ backgroundColor: '#fef3c7' }} className="h-5 w-5 inline-block rounded"></div> 
+          0%
+          <br />
+          <div style={{ backgroundColor: '#f59e0b' }} className="h-5 w-5 inline-block rounded"></div> 
+          5%
+          <br />
+          <div style={{ backgroundColor: '#dc2626' }} className="h-5 w-5 inline-block rounded"></div> 
+          10%
+          <br />
+          <div style={{ backgroundColor: '#991b1b' }} className="h-5 w-5 inline-block rounded"></div> 
+          15%
+          <br />
+          <div style={{ backgroundColor: '#7f1d1d' }} className="h-5 w-5 inline-block rounded"></div> 
+          25%+
+        </div>
+      </div>
+
       {/* Mineral Legend */}
       {/* <div id="mineral-legend" className="mt-4">
         <h5 className="font-semibold pb-1">Critical Minerals</h5>

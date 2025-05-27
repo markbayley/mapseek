@@ -27,6 +27,8 @@ interface InfoPanelProps {
   infoPanelIcons?: Array<{ keyword: string; color: string }>;
   infoPanelIconElements?: React.ReactNode;
   ExportIcons?: React.ReactNode;
+  activeTab: 'inflation' | 'unemployment' | 'gdp';
+  setActiveTab: (tab: 'inflation' | 'unemployment' | 'gdp') => void;
 }
 
 const InfoPanel: React.FC<InfoPanelProps> = ({
@@ -41,7 +43,9 @@ const InfoPanel: React.FC<InfoPanelProps> = ({
   importsPartners,
   infoPanelIcons,
   infoPanelIconElements,
-  ExportIcons
+  ExportIcons,
+  activeTab,
+  setActiveTab
 }) => {
   // console.log("InfoPanel render with subFilter:", subFilter);
   // console.log("InfoPanel received infoPanelIcons:", infoPanelIcons);
@@ -50,8 +54,6 @@ const InfoPanel: React.FC<InfoPanelProps> = ({
   const panelRef = useRef<HTMLDivElement>(null);
   // Add a local state to track the actually rendered icons
   const [renderedIconElements, setRenderedIconElements] = useState<React.ReactNode>(null);
-  // Add state for active tab - default to 'inflation'
-  const [activeTab, setActiveTab] = useState<'inflation' | 'unemployment' | 'gdp'>('inflation');
   
   // When infoPanelIconElements changes, update our local state
   useEffect(() => {
@@ -163,6 +165,67 @@ const InfoPanel: React.FC<InfoPanelProps> = ({
   const renderEconomyInfo = () => {
     // console.log("renderEconomyInfo called with subFilter:", subFilter);
     // console.log("Using renderedIconElements:", renderedIconElements);
+    
+    // Show economic tabs even when no country is selected (for global view)
+    if (!selectedEconomy || !Array.isArray(selectedEconomy)) {
+      return (
+        <>
+          <div className="bg-white text-black p-2 rounded-lg icon-container">
+            <div className="text-2xl font-semibold">Global Economic Overview</div>
+            <div className="pt-2">
+              <div className="text-[16px]">Select an economic indicator to view global data</div>
+            </div>
+          </div>
+          
+          {/* Show economic tabs for global view */}
+          <div className="bg-white text-black p-2 rounded-lg icon-container mt-2">
+            <div className="flex flex-row justify-around items-center gap-2">
+              <div 
+                className={`cursor-pointer transition-all duration-200 ${
+                  activeTab === 'inflation' 
+                    ? 'transform scale-105 ring-2 ring-blue-300 px-3 rounded' 
+                    : 'hover:transform hover:scale-102'
+                }`}
+                onClick={() => setActiveTab('inflation')}
+              >
+                <div className="flex flex-col items-center">
+                  <div className="text-lg font-semibold text-blue-600">Inflation</div>
+                  <div className="text-sm text-gray-600">Global View</div>
+                </div>
+              </div>
+
+              <div 
+                className={`cursor-pointer transition-all duration-200 ${
+                  activeTab === 'unemployment' 
+                    ? 'transform scale-105 ring-2 ring-orange-300 px-3 rounded' 
+                    : 'hover:transform hover:scale-102'
+                }`}
+                onClick={() => setActiveTab('unemployment')}
+              >
+                <div className="flex flex-col items-center">
+                  <div className="text-lg font-semibold text-orange-600">Unemployment</div>
+                  <div className="text-sm text-gray-600">Global View</div>
+                </div>
+              </div>
+             
+              <div 
+                className={`cursor-pointer transition-all duration-200 ${
+                  activeTab === 'gdp' 
+                    ? 'transform scale-105 ring-2 ring-indigo-300 px-3 rounded' 
+                    : 'hover:transform hover:scale-102'
+                }`}
+                onClick={() => setActiveTab('gdp')}
+              >
+                <div className="flex flex-col items-center">
+                  <div className="text-lg font-semibold text-indigo-600">GDP</div>
+                  <div className="text-sm text-gray-600">Global View</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      );
+    }
     
     // Defensive: handle both array and non-array selectedEconomy
     if (Array.isArray(selectedEconomy)) {
