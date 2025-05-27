@@ -1,6 +1,13 @@
 import React, { useEffect } from "react";
+import mapboxgl from "mapbox-gl";
 
-function Search({ searchTerm, setSearchTerm, map }) {
+interface SearchProps {
+  searchTerm: string;
+  setSearchTerm: (term: string) => void;
+  map: React.MutableRefObject<mapboxgl.Map | null>;
+}
+
+function Search({ searchTerm, setSearchTerm, map }: SearchProps) {
   // Function to update the data dynamically when searchTerm changes
   const updateGeoJSONData = async () => {
     const response = await fetch(

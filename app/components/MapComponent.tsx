@@ -13,8 +13,8 @@ import ImportIcons from "./ImportIcons";
 import { addReactIconsToMapbox } from '../utils/addReactIconsToMapbox';
 import { FaOilCan, FaFire, FaIndustry, FaSeedling, FaGem, FaCar, FaShip, FaPlane, FaTruck, FaLaptop, FaMobile, FaTshirt, FaAppleAlt, FaGasPump, FaCoffee } from 'react-icons/fa';
 import { FaOilWell, FaMicrochip, FaTowerBroadcast, FaGears, FaSheetPlastic } from 'react-icons/fa6';
-import { LuMilk, LuBeef, LuBean  } from 'react-icons/lu';
-import {GiWoodPile, GiCorn, GiGoldMine, GiMedicines, GiDoubleFish, GiMetalBar, GiBeetleShell, GiTurbine, GiWireCoil, GiBowlOfRice, GiSugarCane, GiSheep, GiButter, GiBeerStein, GiCoconuts, GiBananaBunch, GiPearlNecklace, GiCigarette, GiRubberBoot, GiChemicalDrop, GiOre } from "react-icons/gi";
+import { LuMilk, LuBeef, LuBean } from 'react-icons/lu';
+import { GiWoodPile, GiCorn, GiGoldMine, GiMedicines, GiDoubleFish, GiMetalBar, GiBeetleShell, GiTurbine, GiWireCoil, GiBowlOfRice, GiSugarCane, GiSheep, GiButter, GiBeerStein, GiCoconuts, GiBananaBunch, GiPearlNecklace, GiCigarette, GiRubberBoot, GiChemicalDrop, GiOre } from "react-icons/gi";
 import { BsMinecartLoaded } from "react-icons/bs";
 import { MdOilBarrel } from "react-icons/md";
 import React from "react";
@@ -69,33 +69,33 @@ interface MapComponentProps {
 // The segments parameter tell us how many
 // new point should we generate.
 function generateArc(start: Feature<Point>, end: Feature<Point>, segments: number): number[][] {
-    // Get the mid point between start and end
-    let midPoint = turf.midpoint(start, end);
+  // Get the mid point between start and end
+  let midPoint = turf.midpoint(start, end);
 
-    // Get the bearing 
-    let bearing = turf.bearing(end, start);
+  // Get the bearing 
+  let bearing = turf.bearing(end, start);
 
-    // Get half of the distance, because we 
-    // start from the midpoint.
-    let distance = turf.distance(start, end) / 2;
+  // Get half of the distance, because we 
+  // start from the midpoint.
+  let distance = turf.distance(start, end) / 2;
 
-    // Add the start coordinate
-    let arc = [start.geometry.coordinates];
+  // Add the start coordinate
+  let arc = [start.geometry.coordinates];
 
-    // We devide 180 angle by segments, and for each angle
-    // we transform the mid point by distance and an angle.
-    for (let angle = 0; angle < 180; angle += (180/ (segments))) {
-        let rotatedPoint = turf.transformTranslate(midPoint,
-                                                   distance,
-                                                   bearing - angle);
-        arc.push(rotatedPoint.geometry.coordinates);
-    }
+  // We devide 180 angle by segments, and for each angle
+  // we transform the mid point by distance and an angle.
+  for (let angle = 0; angle < 180; angle += (180 / (segments))) {
+    let rotatedPoint = turf.transformTranslate(midPoint,
+      distance,
+      bearing - angle);
+    arc.push(rotatedPoint.geometry.coordinates);
+  }
 
-    // Add the end coordinate
-    // Commented out as per previous instruction to not add the end coordinate initially
-    // arc.push(end.geometry.coordinates);
+  // Add the end coordinate
+  // Commented out as per previous instruction to not add the end coordinate initially
+  // arc.push(end.geometry.coordinates);
 
-    return arc;
+  return arc;
 }
 
 // Helper function to normalize country names for robust comparison
@@ -103,7 +103,7 @@ const normalizeCountryName = (name: string): string => {
   return name.toLowerCase().replace(/[^a-z0-9]/g, '');
 };
 
-export default function Map({}: MapComponentProps) {
+export default function Map({ }: MapComponentProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const [spinEnabled, setSpinEnabled] = useState(false);
@@ -162,7 +162,7 @@ export default function Map({}: MapComponentProps) {
       // Get all sources from the map
       const mapStyle = map.current.getStyle();
       const sources = mapStyle && mapStyle.sources ? mapStyle.sources : {};
-      
+
       // Identify and cleanup animation sources and layers
       Object.keys(sources).forEach(sourceId => {
         // Check for both old format (point-0) and new format (point-export-partners-0, point-import-partners-0)
@@ -185,7 +185,7 @@ export default function Map({}: MapComponentProps) {
           animatedPointIds.current.delete(sourceId);
         }
       });
-      
+
       // Get all layers from the map to ensure we catch any that might be missed
       const layers = mapStyle && mapStyle.layers ? mapStyle.layers : [];
       for (let i = 0; i < layers.length; i++) {
@@ -202,10 +202,10 @@ export default function Map({}: MapComponentProps) {
           }
         }
       }
-      
+
       // Clear the tracking set
       animatedPointIds.current.clear();
-      
+
       // Also remove arc layers if they exist
       if (map.current && map.current.getLayer('arcs-layer')) {
         try {
@@ -221,10 +221,10 @@ export default function Map({}: MapComponentProps) {
           console.warn("Error removing arcs-source:", error);
         }
       }
-      
+
       // Reset animation context
       currentAnimationContext.current = '';
-      
+
       console.log("Animation cleanup complete, removed all animation sources and layers");
     } catch (error) {
       console.error("Error cleaning up animations:", error);
@@ -233,11 +233,11 @@ export default function Map({}: MapComponentProps) {
 
   // Animation function for moving points along arcs
   const animate = (
-    mapInstance: mapboxgl.Map, 
-    counter: number, 
-    arcData: any, 
-    pointData: any, 
-    sourceId: string, 
+    mapInstance: mapboxgl.Map,
+    counter: number,
+    arcData: any,
+    pointData: any,
+    sourceId: string,
     segments: number,
     contextKey: string // Add context key parameter
   ) => {
@@ -328,8 +328,8 @@ export default function Map({}: MapComponentProps) {
         container: mapContainer.current!,
         style: "mapbox://styles/mapbox/light-v11",
         center: [20, 40],
-        zoom: 2, 
-        
+        zoom: 2,
+
       });
       console.log('[MapComponent] Initializing Mapbox map');
       // Listen for styledata to set mapReady
@@ -370,7 +370,7 @@ export default function Map({}: MapComponentProps) {
 
       // Get the country center coordinates with fallbacks and validation
       let centerLng = 0, centerLat = 0;
-      
+
       // Try to get coordinates from feature properties
       if (e.features[0] && e.features[0].properties) {
         const props = e.features[0].properties;
@@ -379,7 +379,7 @@ export default function Map({}: MapComponentProps) {
           centerLat = parseFloat(props.LABEL_Y);
         }
       }
-      
+
       // If coordinates are invalid, use click position
       if (isNaN(centerLng) || isNaN(centerLat) || !centerLng || !centerLat) {
         if (e.lngLat) {
@@ -391,33 +391,33 @@ export default function Map({}: MapComponentProps) {
           centerLat = 40;
         }
       }
-      
+
       // Final validation to prevent NaN errors
       if (isNaN(centerLng) || isNaN(centerLat)) {
         centerLng = 20;
         centerLat = 40;
       }
-      
+
       // Create a properly typed coordinate tuple
       const coordinates: [number, number] = [centerLng, centerLat];
-      
+
       if (highlightedCountryId === clickedCountryId) {
         // If the clicked country is already highlighted, unhighlight it
         console.log("Unhighlighting current country");
-        
+
         // Reset the animation context
         currentAnimationContext.current = '';
-        
+
         if (map.current?.getLayer("export-fill")) {
           map.current.removeLayer("export-fill");
         }
         if (map.current?.getLayer("import-fill")) {
           map.current.removeLayer("import-fill");
         }
-        
+
         // Force a thorough cleanup of all animations when deselecting a country
         cleanupAllAnimations();
-        
+
         setPanelOpen(false);
         if (highlightedCountryId) {
           map.current?.setFeatureState(
@@ -429,30 +429,30 @@ export default function Map({}: MapComponentProps) {
             { click: false } // Set to false for unhighlighting
           );
         }
-        
+
         // Return to default view
         map.current?.flyTo({
           zoom: 2,
           //center: [20, 40], // Return to default center
           essential: true,
         });
-        
+
         setHighlightedCountryId(null); // Reset the state
         setSpinEnabled(true);
         // Clear icon states when deselecting a country
         setExportIcons([]);
         setImportIcons([]);
-        
+
       } else {
         // Switching to a new country or selecting a country for the first time
         console.log("Highlighting new country:", clickedCountryId);
-        
+
         // Reset the animation context before updating it
         currentAnimationContext.current = '';
-        
+
         // Force a thorough cleanup of all animations before switching to a new country
         cleanupAllAnimations();
-        
+
         // Unhighlight the previously highlighted country
         if (highlightedCountryId) {
           map.current?.setFeatureState(
@@ -475,21 +475,21 @@ export default function Map({}: MapComponentProps) {
             } as any, // Type cast to resolve type error
             { click: true }
           );
-          
+
           setHighlightedCountryId(clickedCountryId as string); // Type cast since we validated it exists
           setSpinEnabled(false);
           setPanelOpen(true);
-          
+
           // Center and zoom to the selected country
           map.current?.flyTo({
             center: coordinates,
             zoom: 4,
             essential: true,
           });
-        
+
           // Store the selected country center for icon positioning
           setSelectedCountryCenter(coordinates);
-          
+
           // Remove highlight layers if they exist
           if (map.current?.getLayer("export-fill")) {
             map.current.removeLayer("export-fill");
@@ -497,11 +497,11 @@ export default function Map({}: MapComponentProps) {
           if (map.current?.getLayer("import-fill")) {
             map.current.removeLayer("import-fill");
           }
-          
+
           // Clear previous icons to ensure fresh icons for the new country
           setExportIcons([]);
           setImportIcons([]);
-          
+
           // Set the new animation context after a short delay to ensure state update is processed
           setTimeout(() => {
             const newContextKey = getAnimationContextKey(clickedCountryId as string, 'exports');
@@ -567,13 +567,17 @@ export default function Map({}: MapComponentProps) {
       } = feature.properties || {};
       console.log("E", e.features);
 
+
+      console.log("population", POP_EST);
+   
+
       // Remove any existing popup
       if (popupRef.current) popupRef.current.remove();
 
       // Get and validate coordinates
       let lng = parseFloat(LABEL_X);
       let lat = parseFloat(LABEL_Y);
-      
+
       // If coordinates are invalid, try to use map click position as fallback
       if (isNaN(lng) || isNaN(lat) || !lng || !lat) {
         if (e.lngLat) {
@@ -599,41 +603,41 @@ export default function Map({}: MapComponentProps) {
           }
         }
       }
-      
+
       // Final validation to prevent NaN errors
       if (isNaN(lng) || isNaN(lat)) {
         lng = 20;
         lat = 40;
       }
-      
+
       // Create a properly typed coordinate tuple
       const coordinates: [number, number] = [lng, lat];
-      
+
       // Store the coordinates for icon positioning
       setSelectedCountryCenter(coordinates);
-     
+
       if (feature) {
         // Directly call flyTo without requestAnimationFrame
         console.log("Flying to coordinates:", coordinates);
-        
+
         map.current?.flyTo({
           center: coordinates,
           zoom: 4,
           essential: true,
         });
       }
-      
+
       // Get continent key from mapping or fallback to lowercased SUBREGION
       const continentKey =
         FIPS_10 == "MX"
           ? "north-america"
           : FIPS_10 == "RS"
-          ? "central-asia"
-          : FIPS_10 == "IR"
-          ? "middle-east"
-          : SUBREGION
-          ? continentMapping[SUBREGION] || SUBREGION.toLowerCase()
-          : null;
+            ? "central-asia"
+            : FIPS_10 == "IR"
+              ? "middle-east"
+              : SUBREGION
+                ? continentMapping[SUBREGION] || SUBREGION.toLowerCase()
+                : null;
       if (!continentKey) {
         console.error("Undefined continent key");
         return;
@@ -659,7 +663,7 @@ export default function Map({}: MapComponentProps) {
 
       const title =
         result["Government"]?.["Country name"]?.["conventional short form"]?.[
-          "text"
+        "text"
         ] || "";
 
       const overview = result["Economy"]?.["Economic overview"]?.["text"] || "";
@@ -670,6 +674,29 @@ export default function Map({}: MapComponentProps) {
         result["Economy"]?.["Exports - partners"]?.["text"] || "";
       setExportPartners(exportsPartners);
 
+      const exportSeries = [
+        result["Economy"]?.["Exports"]?.["Exports 2024"]?.["text"] || "" ,
+        result["Economy"]?.["Exports"]?.["Exports 2023"]?.["text"] || "" ,
+        result["Economy"]?.["Exports"]?.["Exports 2022"]?.["text"] || "" ,
+        result["Economy"]?.["Exports"]?.["Exports 2021"]?.["text"] || "" ,
+        result["Economy"]?.["Exports"]?.["Exports 2020"]?.["text"] || "" ,
+        result["Economy"]?.["Exports"]?.["Exports 2019"]?.["text"] || "" ,
+        result["Economy"]?.["Exports"]?.["Exports 2018"]?.["text"] || "" ,
+        result["Economy"]?.["Exports"]?.["Exports 2017"]?.["text"] || "" ,
+      ]
+      console.log("exportSeries", exportSeries);
+      const importSeries = [
+        result["Economy"]?.["Imports"]?.["Imports 2024"]?.["text"] || "" ,
+        result["Economy"]?.["Imports"]?.["Imports 2023"]?.["text"] || "" ,
+        result["Economy"]?.["Imports"]?.["Imports 2022"]?.["text"] || "" ,
+        result["Economy"]?.["Imports"]?.["Imports 2021"]?.["text"] || "" ,
+        result["Economy"]?.["Imports"]?.["Imports 2020"]?.["text"] || "" ,
+        result["Economy"]?.["Imports"]?.["Imports 2019"]?.["text"] || "" ,
+        result["Economy"]?.["Imports"]?.["Imports 2018"]?.["text"] || "" ,
+        result["Economy"]?.["Imports"]?.["Imports 2017"]?.["text"] || "" ,
+      ]
+      console.log("importSeries", importSeries);
+
       const imports =
         result["Economy"]?.["Imports - commodities"]?.["text"] || "";
       setImports(imports);
@@ -679,36 +706,107 @@ export default function Map({}: MapComponentProps) {
       const industries = result["Economy"]?.["Industries"]?.["text"] || "";
       const inflation =
         result["Economy"]?.["Inflation rate (consumer prices)"]?.[
-          "Inflation rate (consumer prices) 2023"
+        "Inflation rate (consumer prices) 2023"
         ]?.["text"] || "";
-        const inflationSeries = [
-          result["Economy"]?.["Inflation rate (consumer prices)"]?.[
-            "Inflation rate (consumer prices) 2024"
+      const inflationSeries = [
+        result["Economy"]?.["Inflation rate (consumer prices)"]?.[
+        "Inflation rate (consumer prices) 2024"
+        ]?.["text"] || "",
+        result["Economy"]?.["Inflation rate (consumer prices)"]?.[
+        "Inflation rate (consumer prices) 2023"
+        ]?.["text"] || "",
+        result["Economy"]?.["Inflation rate (consumer prices)"]?.[
+        "Inflation rate (consumer prices) 2022"
+        ]?.["text"] || "",
+        result["Economy"]?.["Inflation rate (consumer prices)"]?.[
+        "Inflation rate (consumer prices) 2021"
+        ]?.["text"] || ""
+      ];
+
+      const unemploymentSeries = [
+        result["Economy"]?.["Unemployment rate"]?.[
+        "Unemployment rate 2024"
+        ]?.["text"] || "",
+        result["Economy"]?.["Unemployment rate"]?.[
+        "Unemployment rate 2023"
+        ]?.["text"] || "",
+        result["Economy"]?.["Unemployment rate"]?.[
+          "Unemployment rate 2022"
           ]?.["text"] || "",
-          result["Economy"]?.["Inflation rate (consumer prices)"]?.[
-            "Inflation rate (consumer prices) 2023"
+        result["Economy"]?.["Unemployment rate"]?.[
+          "Unemployment rate 2021"
           ]?.["text"] || "",
-          result["Economy"]?.["Inflation rate (consumer prices)"]?.[
-            "Inflation rate (consumer prices) 2022"
-          ]?.["text"] || "",
-          result["Economy"]?.["Inflation rate (consumer prices)"]?.[
-            "Inflation rate (consumer prices) 2021"
-          ]?.["text"] || ""
+      ];
+      const pop =
+      result["People and Society"]?.["Population"]?.["total"]?.["text"] || "";
+      console.log("pop", pop);
+
+      const labourForce = result["Economy"]?.["Labor force"]?.["text"] || "";
+      console.log("labourForce", labourForce);
+      //i.e. "24.15 million (2024 est.)"
+      const cleanValue = labourForce.replace(/[million\s]/g, '').trim() || 0;
+      const numericValue = parseFloat(cleanValue)*1000000;
+      const labourParticipation =(numericValue/POP_EST);
+      console.log("numericValue", numericValue);
+      //console.log("labourForce", labourForce);
+      console.log("POP_EST", POP_EST);
+      console.log("labourParticipation", labourParticipation);
+
+      const debt =
+      result["Economy"]?.["Public debt"]?.["Public debt 2024"]?.["text"] ||
+      result["Economy"]?.["Public debt"]?.["Public debt 2023"]?.["text"] ||
+      result["Economy"]?.["Public debt"]?.["Public debt 2022"]?.["text"] ||
+      result["Economy"]?.["Public debt"]?.["Public debt 2021"]?.["text"] ||
+      result["Economy"]?.["Public debt"]?.["Public debt 2020"]?.["text"] ||
+      result["Economy"]?.["Public debt"]?.["Public debt 2019"]?.["text"] ||
+      result["Economy"]?.["Public debt"]?.["Public debt 2018"]?.["text"] ||
+      result["Economy"]?.["Public debt"]?.["Public debt 2017"]?.["text"] ||
+      "";
+      console.log("debt", debt);
+      //107.3% of GDP (2023 est.)
+      const debtPercentage = parseFloat(debt.replace(/[%]/g, '').trim()) || 0;
+      console.log("debtPercentage", debtPercentage);
+
+      const gdpSeries = [
+        result["Economy"]?.["Real GDP growth rate"]?.[
+        "Real GDP growth rate 2024"
+        ]?.["text"] || "",
+        result["Economy"]?.["Real GDP growth rate"]?.[
+        "Real GDP growth rate 2023"
+        ]?.["text"] || "",
+        result["Economy"]?.["Real GDP growth rate"]?.[
+        "Real GDP growth rate 2022"
+        ]?.["text"] || "",
+        result["Economy"]?.["Real GDP growth rate"]?.[
+        "Real GDP growth rate 2021"
+        ]?.["text"] || "",
+      ]
+
+
+      const gdpComposition = [
+        result["Economy"]?.["GDP - composition, by sector of origin"]?.[
+          "agriculture"]?.["text"] || "",
+        result["Economy"]?.["GDP - composition, by sector of origin"]?.[
+          "industry"]?.["text"] || "",
+        result["Economy"]?.["GDP - composition, by sector of origin"]?.[
+          "services"]?.["text"] || ""
         ];
-             
+
+        console.log("gdpComposition", gdpComposition);
+
+       
+
+
       const unemployment =
         result["Economy"]?.["Unemployment rate"]?.["Unemployment rate 2023"]?.[
-          "text"
+        "text"
         ] || "";
-      const debt =
-        result["Economy"]?.["Public debt"]?.["Public debt 2023"]?.["text"] ||
-        "";
-        const resources =
+    
+      const resources =
         result["Geography"]?.["Natural resources"]?.["text"] ||
         "";
-     
+
       const gdpcapita = GDP_per_capita ? GDP_per_capita.toFixed(1) : "N/A"
-       
 
       const introduction =
         result["Introduction"]?.["Background"]?.["text"] || "";
@@ -719,20 +817,19 @@ export default function Map({}: MapComponentProps) {
         result["People and Society"]?.["Median age"]?.["total"]?.["text"] || "";
       const lifeExpectancy =
         result["People and Society"]?.["Life expectancy at birth"]?.[
-          "total population"
+        "total population"
         ]?.["text"] || "";
       const urbanization =
         result["People and Society"]?.["Urbanization"]?.["urban population"]?.[
-          "text"
+        "text"
         ] || "";
       const literacy =
         result["People and Society"]?.["Literacy"]?.["total population"]?.[
-          "text"
+        "text"
         ] || "";
       const fertility =
         result["People and Society"]?.["Total fertility rate"]?.["text"] || "";
-      const pop =
-        result["People and Society"]?.["Population"]?.["total"]?.["text"] || "";
+   
 
       const govt = result["Government"]?.["Government type"]?.["text"] || "";
       const parties =
@@ -741,7 +838,23 @@ export default function Map({}: MapComponentProps) {
         result["Government"]?.["Capital"]?.["name"]?.["text"] || "";
 
       console.log("Generated economy info for:", NAME);
-      const infoEconomy = [title , overview, unemployment, debt, inflation, gdpcapita, industries, resources, inflationSeries]
+      const infoEconomy = [title, 
+                           overview,
+                           unemployment,
+                           debtPercentage,
+                           inflation, 
+                           gdpcapita, 
+                           industries, 
+                           resources, 
+                           inflationSeries, 
+                           gdpComposition, 
+                           unemploymentSeries, 
+                           gdpSeries, 
+                           labourParticipation,
+                           exportSeries,
+                           importSeries,
+                           exports,
+                           imports]
       // (
       //   <div className="bg-white shadow-lg rounded-lg p-4 max-w-xs border-l-4 border-amber-500 animate-fade-in transition duration-300 ease-in-out">
       //     <div className="flex justify-between">
@@ -997,7 +1110,7 @@ export default function Map({}: MapComponentProps) {
           id: "population-fill",
           type: "fill",
           source: "data",
-         // maxzoom: 3,
+          // maxzoom: 3,
           paint: {
             "fill-color": [
               "interpolate",
@@ -1010,7 +1123,7 @@ export default function Map({}: MapComponentProps) {
               100000000,
               "#dc2626",      // Red
               1000000000,
-              "#7f1d1d",  
+              "#7f1d1d",
             ],
             "fill-opacity": 0.5,
           },
@@ -1033,7 +1146,7 @@ export default function Map({}: MapComponentProps) {
               1000000,
               "#10b981",      // Emerald
               10000000,
-              "#047857", 
+              "#047857",
             ],
             "fill-opacity": 0.5,
           },
@@ -1080,8 +1193,8 @@ export default function Map({}: MapComponentProps) {
 
         // map.current.countryLayer = countryLayer;
 
-       // map.current.exportLayer = exportLayerDefinition;
-       // map.current.importLayer = importLayerDefinition;
+        // map.current.exportLayer = exportLayerDefinition;
+        // map.current.importLayer = importLayerDefinition;
         map.current?.addLayer({
           id: "country-fills",
           type: "fill",
@@ -1298,7 +1411,7 @@ export default function Map({}: MapComponentProps) {
       if (!map.current || partners.length === 0) {
         // If no partners, keep the layer but set its visibility to none
         if (map.current?.getLayer("export-fill")) {
-           map.current.setLayoutProperty("export-fill", "visibility", "none");
+          map.current.setLayoutProperty("export-fill", "visibility", "none");
         }
         return;
       }
@@ -1346,9 +1459,9 @@ export default function Map({}: MapComponentProps) {
       const partners = parseExportPartners(importPartners || '');
       if (!map.current || partners.length === 0) {
         // If no partners, keep the layer but set its visibility to none
-         if (map.current?.getLayer("import-fill")) {
-           map.current.setLayoutProperty("import-fill", "visibility", "none");
-         }
+        if (map.current?.getLayer("import-fill")) {
+          map.current.setLayoutProperty("import-fill", "visibility", "none");
+        }
         return;
       }
 
@@ -1411,7 +1524,7 @@ export default function Map({}: MapComponentProps) {
         console.error('Missing or invalid icon component for:', key, val);
       }
     });
- 
+
     addReactIconsToMapbox(map.current, iconsToAdd);
   }, []);
 
@@ -1431,7 +1544,7 @@ export default function Map({}: MapComponentProps) {
   useEffect(() => {
     console.log("subFilter changed effect triggered:", activeOverlays);
     // This effect ensures we recalculate icons when subFilter changes
-    
+
     let iconsToUse: Array<{ keyword: string; color: string }> = [];
     if (activeOverlays.imports) {
       console.log("Using import icons for InfoPanel:", importIcons.length);
@@ -1457,11 +1570,11 @@ export default function Map({}: MapComponentProps) {
       // Overview subfilter: show no specific icons, just the overview information
       iconsToUse = [];
     }
-    
+
     if (iconsToUse.length > 0) {
       // Create icon elements for the InfoPanel with a key based on subFilter to force re-render
       const newInfoPanelIconElements = (
-        <div className="grid grid-cols-4 gap-x-4 gap-y-2 bg-white p-2 rounded-lg shadow-md mt-2" key={`icon-panel-${Date.now()}`}> 
+        <div className="grid grid-cols-4 gap-x-4 gap-y-2 bg-white p-2 rounded-lg shadow-md mt-2" key={`icon-panel-${Date.now()}`}>
           {iconsToUse.map((icon, index) => {
             const IconComponent = (iconMap as any)?.[icon.keyword]?.component;
             const iconColor = (iconMap as any)?.[icon.keyword]?.color || icon.color;
@@ -1474,7 +1587,7 @@ export default function Map({}: MapComponentProps) {
           })}
         </div>
       );
-      
+
       console.log("Generated new infoPanelIconElements for subFilter:", activeOverlays);
       setInfoPanelIcons(iconsToUse);
       setInfoPanelIconElementsState(newInfoPanelIconElements);
@@ -1501,7 +1614,7 @@ export default function Map({}: MapComponentProps) {
   //   }
 
   //   console.log("useEffect (map icon rendering): iconsToShow", iconsToShow);
-    
+
   //   // Don't show icons if no country is selected or if there are no icons to show
   //   if (!map.current || !selectedCountryCenter || iconsToShow.length === 0 || !highlightedCountryId) {
   //     // Remove icon/label layers if present
@@ -1674,10 +1787,10 @@ export default function Map({}: MapComponentProps) {
     }
 
     if (partners.length === 0) {
-       if (map.current?.getLayer(layerId)) {
-           map.current.setLayoutProperty(layerId, "visibility", "none");
-        }
-        return;
+      if (map.current?.getLayer(layerId)) {
+        map.current.setLayoutProperty(layerId, "visibility", "none");
+      }
+      return;
     }
 
     const filter = ["any", ...partners.map((country) => ["==", "name", country])];
@@ -1719,24 +1832,24 @@ export default function Map({}: MapComponentProps) {
 
     // Manually loop through features to debug Hong Kong S.A.R.
     for (const feature of countriesFeatures) {
-        const normalizedFeatureName = normalizeCountryName(feature.properties.NAME);
+      const normalizedFeatureName = normalizeCountryName(feature.properties.NAME);
 
-        // Log comparison specifically for Hong Kong S.A.R.
-        if (normalizedSearchName === normalizeCountryName('Hong Kong S.A.R.')) {
-             console.log(`Manual comparison: '${normalizedFeatureName}' === '${normalizedSearchName}'`);
-             console.log(`Manual comparison result: ${normalizedFeatureName === normalizedSearchName}`);
-        }
+      // Log comparison specifically for Hong Kong S.A.R.
+      if (normalizedSearchName === normalizeCountryName('Hong Kong S.A.R.')) {
+        console.log(`Manual comparison: '${normalizedFeatureName}' === '${normalizedSearchName}'`);
+        console.log(`Manual comparison result: ${normalizedFeatureName === normalizedSearchName}`);
+      }
 
-        if (normalizedFeatureName === normalizedSearchName) {
-            if (feature && feature.properties.LABEL_X && feature.properties.LABEL_Y) {
-              const lng = parseFloat(feature.properties.LABEL_X);
-              const lat = parseFloat(feature.properties.LABEL_Y);
-              if (!isNaN(lng) && !isNaN(lat)) {
-                console.log(`Found coordinates for ${countryName} using manual lookup: [${lng}, ${lat}]`); // Log found coordinates
-                return [lng, lat];
-              }
-            }
+      if (normalizedFeatureName === normalizedSearchName) {
+        if (feature && feature.properties.LABEL_X && feature.properties.LABEL_Y) {
+          const lng = parseFloat(feature.properties.LABEL_X);
+          const lat = parseFloat(feature.properties.LABEL_Y);
+          if (!isNaN(lng) && !isNaN(lat)) {
+            console.log(`Found coordinates for ${countryName} using manual lookup: [${lng}, ${lat}]`); // Log found coordinates
+            return [lng, lat];
+          }
         }
+      }
     }
 
     console.log(`Could not find coordinates for ${countryName} after manual search`); // Log if coordinates not found
@@ -1762,10 +1875,10 @@ export default function Map({}: MapComponentProps) {
     if (!map.current || !selectedCountryCenter || !isCountriesDataReady || !(activeOverlays.exports || activeOverlays.imports)) {
       console.log("Arc drawing prerequisites not met.", { map: !!map.current, selectedCountryCenter: !!selectedCountryCenter, isCountriesDataReady, activeOverlays });
 
-       // If prerequisites are not met, ensure arcs are removed (redundant with lines above, but safe)
-       // Overview and Resources should not show any arcs
-       if (map.current?.getLayer('arcs-layer')) map.current.removeLayer('arcs-layer');
-       if (map.current?.getSource('arcs-source')) map.current.removeSource('arcs-source');
+      // If prerequisites are not met, ensure arcs are removed (redundant with lines above, but safe)
+      // Overview and Resources should not show any arcs
+      if (map.current?.getLayer('arcs-layer')) map.current.removeLayer('arcs-layer');
+      if (map.current?.getSource('arcs-source')) map.current.removeSource('arcs-source');
       return;
     }
 
@@ -1778,13 +1891,13 @@ export default function Map({}: MapComponentProps) {
 
     // Determine which set of partners to use based on subFilter
     const partners = activeOverlays.exports ? parseExportPartners(exportPartners || '') : parseExportPartners(importPartners || '');
-      
+
     // Determine which icons to use based on subFilter  
     const iconsToUse = activeOverlays.exports ? exportIcons : importIcons;
-    
+
     console.log(`Arc drawing useEffect - Parsed ${activeOverlays} partners:`, partners);
     console.log(`Using ${activeOverlays.exports ? "export" : "import"} icons (${iconsToUse.length} icons)`);
-    
+
     const selectedCountryCoords = selectedCountryCenter; // Use the stored selected country center
     const arcFeatures: any[] = [];
 
@@ -1805,7 +1918,7 @@ export default function Map({}: MapComponentProps) {
 
           // Reverse coordinates for import partners to animate towards the selected country
           if (activeOverlays.imports) {
-              curvedCoordinates = curvedCoordinates.reverse();
+            curvedCoordinates = curvedCoordinates.reverse();
           }
 
           // Get the color for this partner based on its index
@@ -1813,35 +1926,35 @@ export default function Map({}: MapComponentProps) {
 
           // Create a LineString feature for the arc
           const arcFeature = {
-             type: 'Feature' as const,
+            type: 'Feature' as const,
             geometry: {
-               type: 'LineString' as const,
-               coordinates: curvedCoordinates // Use curved coordinates (potentially reversed)
+              type: 'LineString' as const,
+              coordinates: curvedCoordinates // Use curved coordinates (potentially reversed)
             },
             properties: { // Add properties object
-                color: arcColor, // Store the color here
-                partnerName: partner,
-                subFilterType: activeOverlays, // Store the subFilter type for identification
-                countryId: highlightedCountryId, // Store the country ID for tracking
-                contextKey: newContextKey // Store the context key for this animation
+              color: arcColor, // Store the color here
+              partnerName: partner,
+              subFilterType: activeOverlays, // Store the subFilter type for identification
+              countryId: highlightedCountryId, // Store the country ID for tracking
+              contextKey: newContextKey // Store the context key for this animation
             }
           };
           arcFeatures.push(arcFeature);
 
           // Add animation for this arc
           const pointSourceId = `point-${activeOverlays}-${index}-${highlightedCountryId}`;
-          
+
           // Get an appropriate icon from the icons collection for this subFilter
           let iconName = 'aircraft'; // Default fallback
           if (iconsToUse.length > 0) {
             const iconKeyword = iconsToUse[index % iconsToUse.length].keyword;
-            iconName = (iconMap as any)?.[iconKeyword]?.name || 
+            iconName = (iconMap as any)?.[iconKeyword]?.name ||
               (activeOverlays.exports ? 'aircraft' : 'ships');
           } else {
             // Fallback icons if no icons are available
             iconName = activeOverlays.exports ? 'aircraft' : 'ships';
           }
-          
+
           const initialPointFeature = {
             type: 'Feature' as const,
             properties: {
@@ -1890,11 +2003,11 @@ export default function Map({}: MapComponentProps) {
             animatedPointIds.current.add(pointSourceId);
 
             // Start the animation directly, letting the animate function wait for the source
-            animate(map.current!, 0, 
-              { type: 'FeatureCollection', features: [arcFeature] }, 
-              { type: 'FeatureCollection', features: [initialPointFeature] }, 
-              pointSourceId, 
-              1000, 
+            animate(map.current!, 0,
+              { type: 'FeatureCollection', features: [arcFeature] },
+              { type: 'FeatureCollection', features: [initialPointFeature] },
+              pointSourceId,
+              1000,
               newContextKey
             );
           }
@@ -1912,37 +2025,37 @@ export default function Map({}: MapComponentProps) {
           features: arcFeatures
         });
       } else {
-      map.current.addSource('arcs-source', {
-        type: 'geojson',
-        data: {
-          type: 'FeatureCollection',
-          features: arcFeatures
-        }
-      });
+        map.current.addSource('arcs-source', {
+          type: 'geojson',
+          data: {
+            type: 'FeatureCollection',
+            features: arcFeatures
+          }
+        });
 
-      map.current.addLayer({
-        id: 'arcs-layer',
-        type: 'line',
-        source: 'arcs-source',
-        paint: {
-          'line-color': ['get', 'color'], // Use the color property from the feature
-          'line-width': 2,
-          'line-opacity': 0.7
-        }
-      });
+        map.current.addLayer({
+          id: 'arcs-layer',
+          type: 'line',
+          source: 'arcs-source',
+          paint: {
+            'line-color': ['get', 'color'], // Use the color property from the feature
+            'line-width': 2,
+            'line-opacity': 0.7
+          }
+        });
       }
     }
     // If no arc features, remove the source and layer if they exist
     else {
-       if (map.current?.getLayer('arcs-layer')) map.current.removeLayer('arcs-layer');
-       if (map.current?.getSource('arcs-source')) map.current.removeSource('arcs-source');
+      if (map.current?.getLayer('arcs-layer')) map.current.removeLayer('arcs-layer');
+      if (map.current?.getSource('arcs-source')) map.current.removeSource('arcs-source');
     }
 
     return () => {
       console.log("Arc drawing useEffect cleanup triggered.");
       // Cancel all animation frames
       cancelAllAnimationFrames();
-      
+
       // Remove dynamically created point sources and layers during cleanup
       if (map.current && arcFeatures.length > 0) {
         arcFeatures.forEach((_, index) => {
@@ -1956,9 +2069,9 @@ export default function Map({}: MapComponentProps) {
           animatedPointIds.current.delete(pointSourceId);
         });
       }
-       // Also remove the arc layer and source during cleanup
-       if (map.current?.getLayer('arcs-layer')) map.current.removeLayer('arcs-layer');
-       if (map.current?.getSource('arcs-source')) map.current.removeSource('arcs-source');
+      // Also remove the arc layer and source during cleanup
+      if (map.current?.getLayer('arcs-layer')) map.current.removeLayer('arcs-layer');
+      if (map.current?.getSource('arcs-source')) map.current.removeSource('arcs-source');
     };
 
   }, [selectedCountryCenter, activeOverlays, isCountriesDataReady, exportPartners, importPartners, animationPaused, exportIcons, importIcons, highlightedCountryId]); // Add highlightedCountryId as dependency
@@ -2159,643 +2272,643 @@ export default function Map({}: MapComponentProps) {
       location: "Abitibi Region, Quebec, Canada",
       details: "Produced ~655,654 ounces of gold in 2024. Significant open-pit and underground operations, with exploration potential."
     },
-    
-      // Lithium
-      {
-        name: "Greenbushes Mine",
-        coordinates: [115.9500, -33.8667],
-        resources: ["lithium"],
-        ownership: "Talison Lithium (Tianqi Lithium 51%, Albemarle 49%)",
-        location: "Western Australia, Australia",
-        details: "World's largest hard-rock lithium mine, producing ~1.95 million tonnes of lithium concentrate annually. Supplies ~40% of global lithium. Operational since 1983."
-      },
-      {
-        name: "Salar del Hombre Muerto",
-        coordinates: [-66.9167, -25.4167],
-        resources: ["lithium"],
-        ownership: "Arcadium Lithium",
-        location: "Catamarca, Argentina",
-        details: "Major lithium brine operation, producing ~25,000 tonnes of lithium carbonate equivalent (LCE) annually. Part of Rio Tinto's portfolio post-Arcadium acquisition."
-      },
-      {
-        name: "Olaroz Mine",
-        coordinates: [-66.7500, -23.4167],
-        resources: ["lithium"],
-        ownership: "Arcadium Lithium",
-        location: "Jujuy, Argentina",
-        details: "Produces ~17,500 tonnes of LCE annually. Part of Lithium Triangle, key for EV battery production. Expanding capacity to 42,500 tonnes by 2026."
-      },
-      {
-        name: "Mount Holland Mine",
-        coordinates: [119.7167, -32.1167],
-        resources: ["lithium"],
-        ownership: "SQM (50%), Wesfarmers (50%)",
-        location: "Western Australia, Australia",
-        details: "One of world's largest hard-rock lithium deposits, producing ~50,000 tonnes of spodumene concentrate annually. Began production in 2024."
-      },
-      {
-        name: "Bikita Mine",
-        coordinates: [31.9167, -20.0833],
-        resources: ["lithium"],
-        ownership: "Sinomine Resource Group",
-        location: "Masvingo Province, Zimbabwe",
-        details: "Africa's richest lithium reserve, targeting ~300,000 tonnes of spodumene concentrate annually post-2022 upgrade. Acquired by China's Sinomine for $180M."
-      },
-    
-      // Cobalt
-      {
-        name: "Katanga Mine",
-        coordinates: [27.2500, -11.6667],
-        resources: ["cobalt", "copper"],
-        ownership: "Glencore",
-        location: "Katanga Province, Democratic Republic of Congo",
-        details: "Major cobalt producer, yielding ~22,000 tonnes of cobalt in 2023. By-product of copper mining, significant for EV batteries."
-      },
-      {
-        name: "Mutanda Mine",
-        coordinates: [27.3333, -11.7333],
-        resources: ["cobalt", "copper"],
-        ownership: "Glencore",
-        location: "Katanga Province, Democratic Republic of Congo",
-        details: "Produced ~15,000 tonnes of cobalt in 2023. Temporarily closed in 2019 due to low prices, resumed in 2021. Key for global cobalt supply."
-      },
-      {
-        name: "Murrin Murrin Mine",
-        coordinates: [121.8833, -28.7167],
-        resources: ["cobalt", "nickel"],
-        ownership: "Glencore",
-        location: "Western Australia, Australia",
-        details: "Produces ~2,000 tonnes of cobalt annually as nickel by-product. Significant laterite deposit, operational since 1999."
-      },
-      {
-        name: "Tenke Fungurume Mine",
-        coordinates: [26.3167, -10.5667],
-        resources: ["cobalt", "copper"],
-        ownership: "China Molybdenum (80%), Gécamines (20%)",
-        location: "Lualaba Province, Democratic Republic of Congo",
-        details: "One of world's largest cobalt mines, producing ~10,000 tonnes annually. Major copper-cobalt operation."
-      },
-    
-      // Manganese
-      {
-        name: "Kalahari Manganese Field (South 32)",
-        coordinates: [24.8000, -27.1167],
-        resources: ["manganese"],
-        ownership: "South32",
-        location: "Northern Cape, South Africa",
-        details: "World's largest manganese deposit, producing ~3.5 million tonnes annually. Supplies 25% of global manganese for steel and batteries."
-      },
-      {
-        name: "Moanda Mine",
-        coordinates: [13.2000, -1.6667],
-        resources: ["manganese"],
-        ownership: "Comilog (Eramet)",
-        location: "Haut-Ogooué Province, Gabon",
-        details: "Produces ~4 million tonnes of manganese ore annually. One of Africa's largest manganese operations, key for battery-grade manganese."
-      },
-      {
-        name: "Bootu Creek Mine",
-        coordinates: [131.1667, -18.6667],
-        resources: ["manganese"],
-        ownership: "OM Holdings",
-        location: "Northern Territory, Australia",
-        details: "Produces ~800,000 tonnes of manganese ore annually. Supplies steel and battery industries, operational since 2005."
-      },
-      {
-        name: "Bondoukou Mine",
-        coordinates: [-2.8000, 8.0333],
-        resources: ["manganese"],
-        ownership: "Taurus Gold Limited",
-        location: "Zanzan District, Côte d'Ivoire",
-        details: "One of four operating manganese mines in Côte d'Ivoire, producing ~500,000 tonnes annually. Exports primarily to China."
-      },
-    
-      // Uranium
-      {
-        name: "Cigar Lake Mine",
-        coordinates: [-104.5333, 58.0667],
-        resources: ["uranium"],
-        ownership: "Cameco (50.02%), Orano (37.1%), Idemitsu (7.88%), TEPCO (5%)",
-        location: "Saskatchewan, Canada",
-        details: "World's highest-grade uranium mine, producing ~7,000 tonnes of uranium annually. Supplies ~10% of global uranium."
-      },
-      {
-        name: "Husab Mine",
-        coordinates: [15.0333, -22.9167],
-        resources: ["uranium"],
-        ownership: "Swakop Uranium (CGN 90%, Epangelo Mining 10%)",
-        location: "Namib Desert, Namibia",
-        details: "Produces ~3,500 tonnes of uranium annually. One of world's largest uranium mines, operational since 2016."
-      },
-      {
-        name: "Olympic Dam Mine",
-        coordinates: [136.8833, -30.4333],
-        resources: ["uranium", "copper", "gold", "silver"],
-        ownership: "BHP",
-        location: "South Australia, Australia",
-        details: "Produces ~3,500 tonnes of uranium annually as by-product of copper mining. World's largest known uranium deposit."
-      },
-      {
-        name: "Karatau Mine",
-        coordinates: [68.8333, 43.6333],
-        resources: ["uranium"],
-        ownership: "Kazatomprom",
-        location: "South Kazakhstan",
-        details: "Produces ~3,000 tonnes of uranium annually. Part of Kazakhstan's dominant uranium industry, supplying ~40% of global uranium."
-      },
-    
-      // Nickel
-      {
-        name: "Norilsk Nickel Mines",
-        coordinates: [88.2000, 69.3333],
-        resources: ["nickel", "copper", "palladium", "platinum"],
-        ownership: "Nornickel",
-        location: "Krasnoyarsk Krai, Russia",
-        details: "World's largest nickel producer, yielding ~200,000 tonnes annually. Also produces significant palladium and platinum."
-      },
-      {
-        name: "Kambalda Nickel Operations",
-        coordinates: [121.6667, -31.2000],
-        resources: ["nickel"],
-        ownership: "IGO Limited",
-        location: "Western Australia, Australia",
-        details: "Produces ~30,000 tonnes of nickel annually. Historic nickel belt, operational since the 1960s."
-      },
-      {
-        name: "Sorowako Mine",
-        coordinates: [121.3667, -2.5333],
-        resources: ["nickel"],
-        ownership: "PT Vale Indonesia",
-        location: "South Sulawesi, Indonesia",
-        details: "Produces ~75,000 tonnes of nickel annually. Major laterite deposit, key for EV battery supply."
-      },
-      {
-        name: "Raglan Mine",
-        coordinates: [-73.6667, 61.6667],
-        resources: ["nickel", "cobalt"],
-        ownership: "Glencore",
-        location: "Nunavik, Quebec, Canada",
-        details: "Produces ~40,000 tonnes of nickel annually. Underground operation in Arctic region, also yields cobalt."
-      },
-    
-      // Zinc
-      {
-        name: "Rampura Agucha Mine",
-        coordinates: [74.7333, 25.8333],
-        resources: ["zinc", "lead"],
-        ownership: "Hindustan Zinc Limited (Vedanta)",
-        location: "Rajasthan, India",
-        details: "World's largest zinc mine, producing ~650,000 tonnes of zinc annually. Operational since 1991, also significant lead producer."
-      },
-      {
-        name: "Red Dog Mine",
-        coordinates: [-162.8333, 68.0667],
-        resources: ["zinc", "lead"],
-        ownership: "Teck Resources",
-        location: "Alaska, USA",
-        details: "Produces ~600,000 tonnes of zinc annually. One of world's largest zinc mines, located in remote Arctic region."
-      },
-      {
-        name: "McArthur River Mine",
-        coordinates: [136.0833, -16.4333],
-        resources: ["zinc", "lead", "silver"],
-        ownership: "Glencore",
-        location: "Northern Territory, Australia",
-        details: "Produces ~250,000 tonnes of zinc annually. Major zinc-lead deposit, operational since 1995."
-      },
-      {
-        name: "Antamina Mine",
-        coordinates: [-77.3167, -9.5333],
-        resources: ["zinc", "copper", "silver", "molybdenum", "rare earth elements"],
-        ownership: "BHP (33.75%), Glencore (33.75%), Teck (22.5%), Mitsubishi (10%)",
-        location: "Ancash Region, Peru",
-        details: "Produces ~400,000 tonnes of zinc annually. One of world's largest copper-zinc mines."
-      },
-    
-      // Rare Earths
-      {
-        name: "Bayan Obo Mine",
-        coordinates: [109.9667, 41.7833],
-        resources: ["rare earth elements"],
-        ownership: "China Northern Rare Earth High-Tech",
-        location: "Inner Mongolia, China",
-        details: "World's largest rare earth mine, producing ~120,000 tonnes of rare earth oxides annually. Supplies ~50% of global rare earths."
-      },
-      {
-        name: "Mountain Pass Mine",
-        coordinates: [-115.5333, 35.4833],
-        resources: ["rare earth elements"],
-        ownership: "MP Materials",
-        location: "California, USA",
-        details: "Produces ~40,000 tonnes of rare earth oxides annually, focusing on neodymium and praseodymium. Restarted in 2018 after bankruptcy."
-      },
-      {
-        name: "Mount Weld Mine",
-        coordinates: [122.1333, -28.8667],
-        resources: ["rare earth elements"],
-        ownership: "Lynas Rare Earths",
-        location: "Western Australia, Australia",
-        details: "Produces ~22,000 tonnes of rare earth oxides annually. Key source of neodymium and praseodymium for magnets."
-      },
-      {
-        name: "Kvanefjeld Project",
-        coordinates: [-46.0333, 60.9667],
-        resources: ["rare earth elements", "uranium"],
-        ownership: "Greenland Minerals",
-        location: "Southern Greenland",
-        details: "Development-stage project with 10.2 million tonnes of rare earth oxides. Uranium by-product halted by Greenland's 2021 ban."
-      },
-    
-      // Potash
-      {
-        name: "Nutrien Allan Mine",
-        coordinates: [-106.0667, 51.9333],
-        resources: ["potash"],
-        ownership: "Nutrien",
-        location: "Saskatchewan, Canada",
-        details: "Produces ~3 million tonnes of potash annually. Part of Saskatchewan's vast potash basin, key for fertilizer production."
-      },
-      {
-        name: "Uralkali Berezniki Mine",
-        coordinates: [56.8333, 59.4167],
-        resources: ["potash"],
-        ownership: "Uralkali",
-        location: "Perm Krai, Russia",
-        details: "Produces ~2.5 million tonnes of potash annually. One of Russia's largest potash operations, supplying global fertilizer markets."
-      },
-      {
-        name: "Mosaic Esterhazy Mine",
-        coordinates: [-102.1833, 50.6667],
-        resources: ["potash"],
-        ownership: "Mosaic Company",
-        location: "Saskatchewan, Canada",
-        details: "World's largest potash mine, producing ~5.5 million tonnes annually. Operational since 1962, key for agricultural fertilizers."
-      },
 
-        // Lithium (Additional Mines)
-  {
-    name: "Goulamina Mine",
-    coordinates: [4.6667, 11.0833],
-    resources: ["lithium"],
-    ownership: "Ganfeng Lithium (50%), Firefinch Limited (50%)",
-    location: "Bamako Region, Mali",
-    details: "One of Africa's largest lithium projects, targeting ~400,000 tonnes of spodumene concentrate annually. Production started in 2024, key for EV battery supply."
-  },
-  {
-    name: "Salar de Atacama",
-    coordinates: [-68.2000, -23.7500],
-    resources: ["lithium"],
-    ownership: "SQM (50%), Albemarle (50%)",
-    location: "Atacama Region, Chile",
-    details: "World's largest lithium brine operation, producing ~70,000 tonnes of lithium carbonate equivalent annually. Supplies ~25% of global lithium."
-  },
-  {
-    name: "Pilgangoora Mine",
-    coordinates: [118.8833, -21.0333],
-    resources: ["lithium"],
-    ownership: "Pilbara Minerals",
-    location: "Western Australia, Australia",
-    details: "Produces ~300,000 tonnes of spodumene concentrate annually. One of Australia's largest hard-rock lithium mines, operational since 2018."
-  },
+    // Lithium
+    {
+      name: "Greenbushes Mine",
+      coordinates: [115.9500, -33.8667],
+      resources: ["lithium"],
+      ownership: "Talison Lithium (Tianqi Lithium 51%, Albemarle 49%)",
+      location: "Western Australia, Australia",
+      details: "World's largest hard-rock lithium mine, producing ~1.95 million tonnes of lithium concentrate annually. Supplies ~40% of global lithium. Operational since 1983."
+    },
+    {
+      name: "Salar del Hombre Muerto",
+      coordinates: [-66.9167, -25.4167],
+      resources: ["lithium"],
+      ownership: "Arcadium Lithium",
+      location: "Catamarca, Argentina",
+      details: "Major lithium brine operation, producing ~25,000 tonnes of lithium carbonate equivalent (LCE) annually. Part of Rio Tinto's portfolio post-Arcadium acquisition."
+    },
+    {
+      name: "Olaroz Mine",
+      coordinates: [-66.7500, -23.4167],
+      resources: ["lithium"],
+      ownership: "Arcadium Lithium",
+      location: "Jujuy, Argentina",
+      details: "Produces ~17,500 tonnes of LCE annually. Part of Lithium Triangle, key for EV battery production. Expanding capacity to 42,500 tonnes by 2026."
+    },
+    {
+      name: "Mount Holland Mine",
+      coordinates: [119.7167, -32.1167],
+      resources: ["lithium"],
+      ownership: "SQM (50%), Wesfarmers (50%)",
+      location: "Western Australia, Australia",
+      details: "One of world's largest hard-rock lithium deposits, producing ~50,000 tonnes of spodumene concentrate annually. Began production in 2024."
+    },
+    {
+      name: "Bikita Mine",
+      coordinates: [31.9167, -20.0833],
+      resources: ["lithium"],
+      ownership: "Sinomine Resource Group",
+      location: "Masvingo Province, Zimbabwe",
+      details: "Africa's richest lithium reserve, targeting ~300,000 tonnes of spodumene concentrate annually post-2022 upgrade. Acquired by China's Sinomine for $180M."
+    },
 
-  // Cobalt (Additional Mines)
-  {
-    name: "Kamoto Mine",
-    coordinates: [25.3833, -10.7167],
-    resources: ["cobalt", "copper"],
-    ownership: "Katanga Mining (Glencore 75%, Gécamines 25%)",
-    location: "Katanga Province, Democratic Republic of Congo",
-    details: "Produces ~20,000 tonnes of cobalt annually. Major copper-cobalt operation, critical for EV battery supply."
-  },
-  {
-    name: "Ambatovy Mine",
-    coordinates: [48.3167, -18.8333],
-    resources: ["cobalt", "nickel"],
-    ownership: "Sherritt International (40%), Sumitomo (32.5%), Korea Resources (27.5%)",
-    location: "Toamasina, Madagascar",
-    details: "Produces ~5,000 tonnes of cobalt annually as a nickel by-product. One of Madagascar's largest mining operations."
-  },
+    // Cobalt
+    {
+      name: "Katanga Mine",
+      coordinates: [27.2500, -11.6667],
+      resources: ["cobalt", "copper"],
+      ownership: "Glencore",
+      location: "Katanga Province, Democratic Republic of Congo",
+      details: "Major cobalt producer, yielding ~22,000 tonnes of cobalt in 2023. By-product of copper mining, significant for EV batteries."
+    },
+    {
+      name: "Mutanda Mine",
+      coordinates: [27.3333, -11.7333],
+      resources: ["cobalt", "copper"],
+      ownership: "Glencore",
+      location: "Katanga Province, Democratic Republic of Congo",
+      details: "Produced ~15,000 tonnes of cobalt in 2023. Temporarily closed in 2019 due to low prices, resumed in 2021. Key for global cobalt supply."
+    },
+    {
+      name: "Murrin Murrin Mine",
+      coordinates: [121.8833, -28.7167],
+      resources: ["cobalt", "nickel"],
+      ownership: "Glencore",
+      location: "Western Australia, Australia",
+      details: "Produces ~2,000 tonnes of cobalt annually as nickel by-product. Significant laterite deposit, operational since 1999."
+    },
+    {
+      name: "Tenke Fungurume Mine",
+      coordinates: [26.3167, -10.5667],
+      resources: ["cobalt", "copper"],
+      ownership: "China Molybdenum (80%), Gécamines (20%)",
+      location: "Lualaba Province, Democratic Republic of Congo",
+      details: "One of world's largest cobalt mines, producing ~10,000 tonnes annually. Major copper-cobalt operation."
+    },
 
-  // Manganese (Additional Mines)
-  {
-    name: "Nsuta Mine",
-    coordinates: [-1.9667, 5.2833],
-    resources: ["manganese"],
-    ownership: "Consolidated Minerals (Tianjin Tewoo 90%, Ghana Manganese Company 10%)",
-    location: "Western Region, Ghana",
-    details: "Produces ~1.5 million tonnes of manganese ore annually. Operational since 1916, key for steel and battery industries."
-  },
-  {
-    name: "Tshipi Borwa Mine",
-    coordinates: [24.7667, -27.3667],
-    resources: ["manganese"],
-    ownership: "Tshipi é Ntle Manganese Mining (Jupiter Mines 49.9%, Ntsimbintle Mining 50.1%)",
-    location: "Northern Cape, South Africa",
-    details: "Produces ~3 million tonnes of manganese ore annually. One of South Africa's largest manganese exporters."
-  },
+    // Manganese
+    {
+      name: "Kalahari Manganese Field (South 32)",
+      coordinates: [24.8000, -27.1167],
+      resources: ["manganese"],
+      ownership: "South32",
+      location: "Northern Cape, South Africa",
+      details: "World's largest manganese deposit, producing ~3.5 million tonnes annually. Supplies 25% of global manganese for steel and batteries."
+    },
+    {
+      name: "Moanda Mine",
+      coordinates: [13.2000, -1.6667],
+      resources: ["manganese"],
+      ownership: "Comilog (Eramet)",
+      location: "Haut-Ogooué Province, Gabon",
+      details: "Produces ~4 million tonnes of manganese ore annually. One of Africa's largest manganese operations, key for battery-grade manganese."
+    },
+    {
+      name: "Bootu Creek Mine",
+      coordinates: [131.1667, -18.6667],
+      resources: ["manganese"],
+      ownership: "OM Holdings",
+      location: "Northern Territory, Australia",
+      details: "Produces ~800,000 tonnes of manganese ore annually. Supplies steel and battery industries, operational since 2005."
+    },
+    {
+      name: "Bondoukou Mine",
+      coordinates: [-2.8000, 8.0333],
+      resources: ["manganese"],
+      ownership: "Taurus Gold Limited",
+      location: "Zanzan District, Côte d'Ivoire",
+      details: "One of four operating manganese mines in Côte d'Ivoire, producing ~500,000 tonnes annually. Exports primarily to China."
+    },
 
-  // Uranium (Additional Mines)
-  {
-    name: "McArthur River Mine",
-    coordinates: [-105.0333, 57.7667],
-    resources: ["uranium"],
-    ownership: "Cameco (69.805%), Orano (30.195%)",
-    location: "Saskatchewan, Canada",
-    details: "World's largest high-grade uranium mine, producing ~6,800 tonnes annually. Temporarily suspended in 2018, resumed in 2022."
-  },
-  {
-    name: "Rössing Mine",
-    coordinates: [15.0333, -22.4833],
-    resources: ["uranium"],
-    ownership: "China National Uranium Corporation (68.62%), Rio Tinto (15.24%)",
-    location: "Erongo Region, Namibia",
-    details: "Produces ~2,500 tonnes of uranium annually. One of world's longest-running uranium mines, operational since 1976."
-  },
+    // Uranium
+    {
+      name: "Cigar Lake Mine",
+      coordinates: [-104.5333, 58.0667],
+      resources: ["uranium"],
+      ownership: "Cameco (50.02%), Orano (37.1%), Idemitsu (7.88%), TEPCO (5%)",
+      location: "Saskatchewan, Canada",
+      details: "World's highest-grade uranium mine, producing ~7,000 tonnes of uranium annually. Supplies ~10% of global uranium."
+    },
+    {
+      name: "Husab Mine",
+      coordinates: [15.0333, -22.9167],
+      resources: ["uranium"],
+      ownership: "Swakop Uranium (CGN 90%, Epangelo Mining 10%)",
+      location: "Namib Desert, Namibia",
+      details: "Produces ~3,500 tonnes of uranium annually. One of world's largest uranium mines, operational since 2016."
+    },
+    {
+      name: "Olympic Dam Mine",
+      coordinates: [136.8833, -30.4333],
+      resources: ["uranium", "copper", "gold", "silver"],
+      ownership: "BHP",
+      location: "South Australia, Australia",
+      details: "Produces ~3,500 tonnes of uranium annually as by-product of copper mining. World's largest known uranium deposit."
+    },
+    {
+      name: "Karatau Mine",
+      coordinates: [68.8333, 43.6333],
+      resources: ["uranium"],
+      ownership: "Kazatomprom",
+      location: "South Kazakhstan",
+      details: "Produces ~3,000 tonnes of uranium annually. Part of Kazakhstan's dominant uranium industry, supplying ~40% of global uranium."
+    },
 
-  // Nickel (Additional Mines)
-  {
-    name: "Mincor Kambalda Operations",
-    coordinates: [121.6667, -31.2000],
-    resources: ["nickel"],
-    ownership: "Wyloo Metals",
-    location: "Western Australia, Australia",
-    details: "Produces ~20,000 tonnes of nickel annually. Revived in 2021, key for EV battery supply."
-  },
-  {
-    name: "Voisey's Bay Mine",
-    coordinates: [-56.3167, 56.3333],
-    resources: ["nickel", "copper", "cobalt"],
-    ownership: "Vale",
-    location: "Labrador, Canada",
-    details: "Produces ~40,000 tonnes of nickel annually. Significant cobalt by-product, operational since 2005."
-  },
+    // Nickel
+    {
+      name: "Norilsk Nickel Mines",
+      coordinates: [88.2000, 69.3333],
+      resources: ["nickel", "copper", "palladium", "platinum"],
+      ownership: "Nornickel",
+      location: "Krasnoyarsk Krai, Russia",
+      details: "World's largest nickel producer, yielding ~200,000 tonnes annually. Also produces significant palladium and platinum."
+    },
+    {
+      name: "Kambalda Nickel Operations",
+      coordinates: [121.6667, -31.2000],
+      resources: ["nickel"],
+      ownership: "IGO Limited",
+      location: "Western Australia, Australia",
+      details: "Produces ~30,000 tonnes of nickel annually. Historic nickel belt, operational since the 1960s."
+    },
+    {
+      name: "Sorowako Mine",
+      coordinates: [121.3667, -2.5333],
+      resources: ["nickel"],
+      ownership: "PT Vale Indonesia",
+      location: "South Sulawesi, Indonesia",
+      details: "Produces ~75,000 tonnes of nickel annually. Major laterite deposit, key for EV battery supply."
+    },
+    {
+      name: "Raglan Mine",
+      coordinates: [-73.6667, 61.6667],
+      resources: ["nickel", "cobalt"],
+      ownership: "Glencore",
+      location: "Nunavik, Quebec, Canada",
+      details: "Produces ~40,000 tonnes of nickel annually. Underground operation in Arctic region, also yields cobalt."
+    },
 
-  // Zinc (Additional Mines)
-  {
-    name: "Tara Mine",
-    coordinates: [-6.7167, 53.5833],
-    resources: ["zinc", "lead"],
-    ownership: "Boliden",
-    location: "County Meath, Ireland",
-    details: "Produces ~200,000 tonnes of zinc annually. Europe's largest zinc mine, operational since 1977."
-  },
-  {
-    name: "Cerro Lindo Mine",
-    coordinates: [-76.1333, -14.5167],
-    resources: ["zinc", "copper", "lead", "silver"],
-    ownership: "Nexa Resources",
-    location: "Ica Region, Peru",
-    details: "Produces ~150,000 tonnes of zinc annually. Major polymetallic mine in Latin America."
-  },
+    // Zinc
+    {
+      name: "Rampura Agucha Mine",
+      coordinates: [74.7333, 25.8333],
+      resources: ["zinc", "lead"],
+      ownership: "Hindustan Zinc Limited (Vedanta)",
+      location: "Rajasthan, India",
+      details: "World's largest zinc mine, producing ~650,000 tonnes of zinc annually. Operational since 1991, also significant lead producer."
+    },
+    {
+      name: "Red Dog Mine",
+      coordinates: [-162.8333, 68.0667],
+      resources: ["zinc", "lead"],
+      ownership: "Teck Resources",
+      location: "Alaska, USA",
+      details: "Produces ~600,000 tonnes of zinc annually. One of world's largest zinc mines, located in remote Arctic region."
+    },
+    {
+      name: "McArthur River Mine",
+      coordinates: [136.0833, -16.4333],
+      resources: ["zinc", "lead", "silver"],
+      ownership: "Glencore",
+      location: "Northern Territory, Australia",
+      details: "Produces ~250,000 tonnes of zinc annually. Major zinc-lead deposit, operational since 1995."
+    },
+    {
+      name: "Antamina Mine",
+      coordinates: [-77.3167, -9.5333],
+      resources: ["zinc", "copper", "silver", "molybdenum", "rare earth elements"],
+      ownership: "BHP (33.75%), Glencore (33.75%), Teck (22.5%), Mitsubishi (10%)",
+      location: "Ancash Region, Peru",
+      details: "Produces ~400,000 tonnes of zinc annually. One of world's largest copper-zinc mines."
+    },
 
-  // Rare Earths (Additional Mines)
-  {
-    name: "Wicheeda Project",
-    coordinates: [-122.0667, 54.5000],
-    resources: ["rare earth elements"],
-    ownership: "Defense Metals Corp",
-    location: "British Columbia, Canada",
-    details: "Development-stage project with ~27 million tonnes of rare earth oxides. Focus on neodymium and praseodymium, potential start by 2028."
-  },
-  {
-    name: "Halleck Creek Project",
-    coordinates: [-105.6667, 41.3333],
-    resources: ["rare earth elements"],
-    ownership: "American Rare Earths",
-    location: "Wyoming, USA",
-    details: "Contains ~4.7 million tonnes of rare earth oxides. Low-thorium deposit, under exploration for future production."
-  },
+    // Rare Earths
+    {
+      name: "Bayan Obo Mine",
+      coordinates: [109.9667, 41.7833],
+      resources: ["rare earth elements"],
+      ownership: "China Northern Rare Earth High-Tech",
+      location: "Inner Mongolia, China",
+      details: "World's largest rare earth mine, producing ~120,000 tonnes of rare earth oxides annually. Supplies ~50% of global rare earths."
+    },
+    {
+      name: "Mountain Pass Mine",
+      coordinates: [-115.5333, 35.4833],
+      resources: ["rare earth elements"],
+      ownership: "MP Materials",
+      location: "California, USA",
+      details: "Produces ~40,000 tonnes of rare earth oxides annually, focusing on neodymium and praseodymium. Restarted in 2018 after bankruptcy."
+    },
+    {
+      name: "Mount Weld Mine",
+      coordinates: [122.1333, -28.8667],
+      resources: ["rare earth elements"],
+      ownership: "Lynas Rare Earths",
+      location: "Western Australia, Australia",
+      details: "Produces ~22,000 tonnes of rare earth oxides annually. Key source of neodymium and praseodymium for magnets."
+    },
+    {
+      name: "Kvanefjeld Project",
+      coordinates: [-46.0333, 60.9667],
+      resources: ["rare earth elements", "uranium"],
+      ownership: "Greenland Minerals",
+      location: "Southern Greenland",
+      details: "Development-stage project with 10.2 million tonnes of rare earth oxides. Uranium by-product halted by Greenland's 2021 ban."
+    },
 
-  // Potash (Additional Mines)
-  {
-    name: "Cory Mine",
-    coordinates: [-104.3167, 52.0833],
-    resources: ["potash"],
-    ownership: "Nutrien",
-    location: "Saskatchewan, Canada",
-    details: "Produces ~3 million tonnes of potash annually. Part of Saskatchewan's potash belt, key for fertilizer production."
-  },
-  {
-    name: "Belaruskali Soligorsk Mine",
-    coordinates: [27.5667, 52.7833],
-    resources: ["potash"],
-    ownership: "Belaruskali",
-    location: "Minsk Region, Belarus",
-    details: "Produces ~7 million tonnes of potash annually. One of world's largest potash operations, supplying global fertilizer markets."
-  },
+    // Potash
+    {
+      name: "Nutrien Allan Mine",
+      coordinates: [-106.0667, 51.9333],
+      resources: ["potash"],
+      ownership: "Nutrien",
+      location: "Saskatchewan, Canada",
+      details: "Produces ~3 million tonnes of potash annually. Part of Saskatchewan's vast potash basin, key for fertilizer production."
+    },
+    {
+      name: "Uralkali Berezniki Mine",
+      coordinates: [56.8333, 59.4167],
+      resources: ["potash"],
+      ownership: "Uralkali",
+      location: "Perm Krai, Russia",
+      details: "Produces ~2.5 million tonnes of potash annually. One of Russia's largest potash operations, supplying global fertilizer markets."
+    },
+    {
+      name: "Mosaic Esterhazy Mine",
+      coordinates: [-102.1833, 50.6667],
+      resources: ["potash"],
+      ownership: "Mosaic Company",
+      location: "Saskatchewan, Canada",
+      details: "World's largest potash mine, producing ~5.5 million tonnes annually. Operational since 1962, key for agricultural fertilizers."
+    },
 
-  //Silver (Additional Mines)
-  {
-    name: "San Cristobal Mine",
-    coordinates: [-69.6667, -17.4667],
-    resources: ["silver"],
-    ownership: "Pan American Silver",
-    location: "Potosí, Bolivia",
-    details: "Produces ~100 million ounces of silver annually. One of world's largest silver mines, operational since 1921."
-  },
-  {
-    name: "Polkowice-Sieroszowice Mine",
-    coordinates: [16.7667, 51.3667],
-    resources: ["silver"],
-    ownership: "KGHM",
-    location: "Silesia, Poland",
-    details: "The Polkowice-Sieroszowice Mine is a silver mine located in Silesia, Poland. Owned by KGHM, the greenfield project produced an estimated 1.000Mt of ROM in 2023. It had an estimated production of 1.000Mt of silver in 2023"
-  },
-  {
-    name: "Peñasquito Mine",
-    coordinates: [-101.716414, 24.657013],
-    resources: ["silver"],
-    ownership: "Newmont/Silver Standard Resources",
-    location: "San Dimas, Mexico",
-    details: "The Peñasquito Mine is a silver mine located in San Dimas, Mexico. Owned by Newmont/Silver Standard Resources, the greenfield project produced an estimated 1.000Mt of ROM in 2023. It had an estimated production of 1.000Mt of silver in 2023"
-  },
-  {
-    name: "Cannington Mine",
-    coordinates: [140.906505, -21.856488],
-    resources: ["silver"],
-    ownership: "Newmont",
-    location: "Queensland, Australia",
-    details: "The Cannington Mine is a gold mine located in Queensland, Australia. Owned by Newmont, the greenfield project produced an estimated 1.000Mt of ROM in 2023. It had an estimated production of 1.000Mt of gold in 2023"
-  },
-  {
-    name: "Nevada Gold Mines",
-    coordinates: [-115.783889, 40.829256],
-    resources: ["gold"],
-    ownership: "Newmont",
-    location: "Nevada, USA",
-    details: "The Nevada Gold Mines is a gold mine located in Nevada, USA. Owned by Newmont, the greenfield project produced an estimated 1.000Mt of ROM in 2023. It had an estimated production of 1.000Mt of gold in 2023"
-  },
-  {
-    name: "Lihir Mine",
-    coordinates: [147.3667, -7.3667],
-    resources: ["gold"],
-    ownership: "Newcrest",
-    location: "Papua New Guinea",
-    details: "The Lihir Mine is a gold mine located in Papua New Guinea. Owned by Newcrest, the greenfield project produced an estimated 1.000Mt of ROM in 2023. It had an estimated production of 1.000Mt of gold in 2023"
-  },
-  //Diamond mines
-  {
-    name: "Kao Mine",
-    coordinates: [28.629570, -29.021307],
-    resources: ["diamonds"],
-    ownership: "Storm Mountain Diamonds",
-    location: "Butha-Buthe, Lesotho",
-    details: "The Kao Mine is a surface mine situated in Butha-Buthe, Lesotho. Owned by Namakwa Diamonds, the brownfield mine produced an estimated 13.31 million carats of diamond in 2023. The mine will operate until 2034"
-  },
-  {
-    name: "Jwaneng Mine",
-    coordinates: [24.695647, -24.532317],
-    resources: ["diamonds"],
-    ownership: "State of Botswana",
-    location: "Botswana",
-    details: "Located in Kgalagadi District, Botswana, the Jwaneng Mine is owned by Government of Botswana. The surface mine produced an estimated 11.86 million carats of diamond in 2023. The mine will operate until 2036"
-  },
-  //Africa mines
-  {
-    name: "Catoca Mine",
-    coordinates: [20.300057, -9.407280],
-    resources: ["diamonds"],
-    ownership: "Endiama EP",
-    location: "Angola",
-    details: "The Catoca Mine is a surface mine situated in Lunda Sul, Angola. The greenfield mine produced an estimated 6.42 million carats of diamond in 2023. The expected mine closure date is 2037"
-  },
+    // Lithium (Additional Mines)
+    {
+      name: "Goulamina Mine",
+      coordinates: [4.6667, 11.0833],
+      resources: ["lithium"],
+      ownership: "Ganfeng Lithium (50%), Firefinch Limited (50%)",
+      location: "Bamako Region, Mali",
+      details: "One of Africa's largest lithium projects, targeting ~400,000 tonnes of spodumene concentrate annually. Production started in 2024, key for EV battery supply."
+    },
+    {
+      name: "Salar de Atacama",
+      coordinates: [-68.2000, -23.7500],
+      resources: ["lithium"],
+      ownership: "SQM (50%), Albemarle (50%)",
+      location: "Atacama Region, Chile",
+      details: "World's largest lithium brine operation, producing ~70,000 tonnes of lithium carbonate equivalent annually. Supplies ~25% of global lithium."
+    },
+    {
+      name: "Pilgangoora Mine",
+      coordinates: [118.8833, -21.0333],
+      resources: ["lithium"],
+      ownership: "Pilbara Minerals",
+      location: "Western Australia, Australia",
+      details: "Produces ~300,000 tonnes of spodumene concentrate annually. One of Australia's largest hard-rock lithium mines, operational since 2018."
+    },
 
-  //Asia mines
-  {
-    name: "Green Mine",
-    coordinates: [104.2667, 30.6667],
-    resources: ["phosphate"],
-    ownership: "China National Gold Group",
-    location: "Sichuan, China",
-    details: "The Green Mine is a phosphate mine owned by Sichuan Lomon. Located in Sichuan, China, the greenfield mine produced approximately 61.933Mt of ROM in 2023. It had an estimated production of 37.16 mtpa of phosphate in 2023"
-  },
+    // Cobalt (Additional Mines)
+    {
+      name: "Kamoto Mine",
+      coordinates: [25.3833, -10.7167],
+      resources: ["cobalt", "copper"],
+      ownership: "Katanga Mining (Glencore 75%, Gécamines 25%)",
+      location: "Katanga Province, Democratic Republic of Congo",
+      details: "Produces ~20,000 tonnes of cobalt annually. Major copper-cobalt operation, critical for EV battery supply."
+    },
+    {
+      name: "Ambatovy Mine",
+      coordinates: [48.3167, -18.8333],
+      resources: ["cobalt", "nickel"],
+      ownership: "Sherritt International (40%), Sumitomo (32.5%), Korea Resources (27.5%)",
+      location: "Toamasina, Madagascar",
+      details: "Produces ~5,000 tonnes of cobalt annually as a nickel by-product. One of Madagascar's largest mining operations."
+    },
 
-  {
-    name: "Northern Shaanxi Mine",
-    coordinates: [110.1667, 34.0667],
-    resources: ["coal"],
-    ownership: "Shaanxi Gold Mining",
-    location: "Shaanxi, China",
-    details: "The Northern Shaanxi Mine is a coal mine located in Shaanxi, China. Owned by Shaanxi Coal Industry Group, the greenfield project produced an estimated 10.000Mt of ROM in 2023. It had an estimated production of 1.5 million tonnes of coal in 2023"
-  },
-  {
-    name: "Julong Copper Mine",
-    coordinates: [91.090073, 29.636152],
-    resources: ["copper"],
-    ownership: "China National Gold Group",
-    location: "Tibet, China",
-    details: "The Julong Copper Mine is a copper mine located in Tibet, China. Owned by Zijin Mining Group, the greenfield project produced an estimated 43.566Mt of ROM in 2023."
-  },
-  {
-    name: "Weda Bay Project",
-    coordinates: [127.957318, 0.548746],
-    resources: ["nickel"],
-    ownership: "PT Vale Indonesia Tbk",
-    location: "Sulawesi, Indonesia",
-    details: "The Weda Bay Project is a nickel mining project in Maluku, Indonesia. The greenfield project is owned by Tsingshan Holding Group and is due to operate until 2069. The mine produced an estimated 39.709Mt of ROM in 2023. It had an estimated production of 516.7 thousand tonnes of nickel in 2023"
-  },
-  // Oil Operations
-  {
-    name: "Orinoco Belt",
-  coordinates: [-64.826469, 7.699111],
-  resources: ["petroleum"],
-  ownership: "State Owned",
-  location: "Venuezala",
-details: "The Orinoco Belt is a territory in the southern strip of the eastern Orinoco River Basin in Venezuela which overlies the world's largest deposits of petroleum."
-  },
-  {
-    name: "Ghawar Field",
-    coordinates: [49.9833, 25.4333],
-    resources: ["petroleum"],
-    ownership: "Saudi Aramco",
-    location: "Eastern Province, Saudi Arabia",
-    details: "World's largest oil field, producing ~3.8 million barrels per day (bpd). Discovered in 1948, holds ~70 billion barrels of reserves."
-  },
-  {
-    name: "Burgan Field",
-    coordinates: [47.9833, 29.0667],
-    resources: ["petroleum"],
-    ownership: "Kuwait Oil Company",
-    location: "Kuwait",
-    details: "Second-largest oil field globally, producing ~1.7 million bpd. Discovered in 1938, holds ~66 billion barrels of reserves."
-  },
-  {
-    name: "Prudhoe Bay Oil Field",
-    coordinates: [-148.3333, 70.3167],
-    resources: ["petroleum", "natural gas"],
-    ownership: "BP (26%), ExxonMobil (36%), ConocoPhillips (36%)",
-    location: "North Slope, Alaska, USA",
-    details: "Largest oil field in North America, producing ~500,000 bpd. Discovered in 1968, also produces natural gas."
-  },
-  {
-    name: "Safaniya Field",
-    coordinates: [49.3167, 28.1333],
-    resources: ["petroleum"],
-    ownership: "Saudi Aramco",
-    location: "Persian Gulf, Saudi Arabia",
-    details: "World's largest offshore oil field, producing ~1.2 million bpd. Discovered in 1951, holds ~37 billion barrels of reserves."
-  },
-  {
-    name: "Rumaila Field",
-    coordinates: [47.4167, 30.1667],
-    resources: ["petroleum"],
-    ownership: "Iraq National Oil Company, BP, CNPC",
-    location: "Basra, Iraq",
-    details: "Produces ~1.5 million bpd. One of Iraq's largest oil fields, operational since 1953, with ~17 billion barrels of reserves."
-  },
+    // Manganese (Additional Mines)
+    {
+      name: "Nsuta Mine",
+      coordinates: [-1.9667, 5.2833],
+      resources: ["manganese"],
+      ownership: "Consolidated Minerals (Tianjin Tewoo 90%, Ghana Manganese Company 10%)",
+      location: "Western Region, Ghana",
+      details: "Produces ~1.5 million tonnes of manganese ore annually. Operational since 1916, key for steel and battery industries."
+    },
+    {
+      name: "Tshipi Borwa Mine",
+      coordinates: [24.7667, -27.3667],
+      resources: ["manganese"],
+      ownership: "Tshipi é Ntle Manganese Mining (Jupiter Mines 49.9%, Ntsimbintle Mining 50.1%)",
+      location: "Northern Cape, South Africa",
+      details: "Produces ~3 million tonnes of manganese ore annually. One of South Africa's largest manganese exporters."
+    },
 
-  // Gas Operations
-  {
-    name: "South Pars/North Dome Field",
-    coordinates: [52.5833, 26.2833],
-    resources: ["natural gas", "petroleum"],
-    ownership: "QatarEnergy (Qatar), NIOC (Iran)",
-    location: "Persian Gulf, Qatar/Iran",
-    details: "World's largest gas field, producing ~1.8 trillion cubic feet of gas annually. Shared between Qatar and Iran, holds ~1,800 trillion cubic feet of reserves."
-  },
-  {
-    name: "Urengoy Field",
-    coordinates: [74.5333, 65.9667],
-    resources: ["natural gas", "petroleum"],
-    ownership: "Gazprom",
-    location: "Yamal-Nenets Region, Russia",
-    details: "Produces ~250 billion cubic meters of gas annually. One of world's largest gas fields, operational since 1978."
-  },
-  {
-    name: "Turkmenistan Galkynysh Field",
-    coordinates: [53.8333, 37.6667],
-    resources: ["natural gas"],
-    ownership: "Türkmengaz",
-    location: "Mary Province, Turkmenistan",
-    details: "Produces ~80 billion cubic meters of gas annually. Second-largest gas field globally, with ~700 trillion cubic feet of reserves."
-  },
-  {
-    name: "Troll Field",
-    coordinates: [3.7167, 60.6667],
-    resources: ["natural gas", "petroleum"],
-    ownership: "Equinor (30.58%), Petoro (56%), Shell (8.1%)",
-    location: "North Sea, Norway",
-    details: "Produces ~40 billion cubic meters of gas annually. Europe's largest offshore gas field, operational since 1996."
-  },
-  {
-    name: "Ichthys Field",
-    coordinates: [123.6167, -12.6667],
-    resources: ["natural gas", "condensate"],
-    ownership: "INPEX (62.245%), TotalEnergies (30%)",
-    location: "Timor Sea, Australia",
-    details: "Produces ~8.9 million tonnes of LNG annually. Operational since 2018, with ~12 trillion cubic feet of gas reserves."
-  }
-    
+    // Uranium (Additional Mines)
+    {
+      name: "McArthur River Mine",
+      coordinates: [-105.0333, 57.7667],
+      resources: ["uranium"],
+      ownership: "Cameco (69.805%), Orano (30.195%)",
+      location: "Saskatchewan, Canada",
+      details: "World's largest high-grade uranium mine, producing ~6,800 tonnes annually. Temporarily suspended in 2018, resumed in 2022."
+    },
+    {
+      name: "Rössing Mine",
+      coordinates: [15.0333, -22.4833],
+      resources: ["uranium"],
+      ownership: "China National Uranium Corporation (68.62%), Rio Tinto (15.24%)",
+      location: "Erongo Region, Namibia",
+      details: "Produces ~2,500 tonnes of uranium annually. One of world's longest-running uranium mines, operational since 1976."
+    },
+
+    // Nickel (Additional Mines)
+    {
+      name: "Mincor Kambalda Operations",
+      coordinates: [121.6667, -31.2000],
+      resources: ["nickel"],
+      ownership: "Wyloo Metals",
+      location: "Western Australia, Australia",
+      details: "Produces ~20,000 tonnes of nickel annually. Revived in 2021, key for EV battery supply."
+    },
+    {
+      name: "Voisey's Bay Mine",
+      coordinates: [-56.3167, 56.3333],
+      resources: ["nickel", "copper", "cobalt"],
+      ownership: "Vale",
+      location: "Labrador, Canada",
+      details: "Produces ~40,000 tonnes of nickel annually. Significant cobalt by-product, operational since 2005."
+    },
+
+    // Zinc (Additional Mines)
+    {
+      name: "Tara Mine",
+      coordinates: [-6.7167, 53.5833],
+      resources: ["zinc", "lead"],
+      ownership: "Boliden",
+      location: "County Meath, Ireland",
+      details: "Produces ~200,000 tonnes of zinc annually. Europe's largest zinc mine, operational since 1977."
+    },
+    {
+      name: "Cerro Lindo Mine",
+      coordinates: [-76.1333, -14.5167],
+      resources: ["zinc", "copper", "lead", "silver"],
+      ownership: "Nexa Resources",
+      location: "Ica Region, Peru",
+      details: "Produces ~150,000 tonnes of zinc annually. Major polymetallic mine in Latin America."
+    },
+
+    // Rare Earths (Additional Mines)
+    {
+      name: "Wicheeda Project",
+      coordinates: [-122.0667, 54.5000],
+      resources: ["rare earth elements"],
+      ownership: "Defense Metals Corp",
+      location: "British Columbia, Canada",
+      details: "Development-stage project with ~27 million tonnes of rare earth oxides. Focus on neodymium and praseodymium, potential start by 2028."
+    },
+    {
+      name: "Halleck Creek Project",
+      coordinates: [-105.6667, 41.3333],
+      resources: ["rare earth elements"],
+      ownership: "American Rare Earths",
+      location: "Wyoming, USA",
+      details: "Contains ~4.7 million tonnes of rare earth oxides. Low-thorium deposit, under exploration for future production."
+    },
+
+    // Potash (Additional Mines)
+    {
+      name: "Cory Mine",
+      coordinates: [-104.3167, 52.0833],
+      resources: ["potash"],
+      ownership: "Nutrien",
+      location: "Saskatchewan, Canada",
+      details: "Produces ~3 million tonnes of potash annually. Part of Saskatchewan's potash belt, key for fertilizer production."
+    },
+    {
+      name: "Belaruskali Soligorsk Mine",
+      coordinates: [27.5667, 52.7833],
+      resources: ["potash"],
+      ownership: "Belaruskali",
+      location: "Minsk Region, Belarus",
+      details: "Produces ~7 million tonnes of potash annually. One of world's largest potash operations, supplying global fertilizer markets."
+    },
+
+    //Silver (Additional Mines)
+    {
+      name: "San Cristobal Mine",
+      coordinates: [-69.6667, -17.4667],
+      resources: ["silver"],
+      ownership: "Pan American Silver",
+      location: "Potosí, Bolivia",
+      details: "Produces ~100 million ounces of silver annually. One of world's largest silver mines, operational since 1921."
+    },
+    {
+      name: "Polkowice-Sieroszowice Mine",
+      coordinates: [16.7667, 51.3667],
+      resources: ["silver"],
+      ownership: "KGHM",
+      location: "Silesia, Poland",
+      details: "The Polkowice-Sieroszowice Mine is a silver mine located in Silesia, Poland. Owned by KGHM, the greenfield project produced an estimated 1.000Mt of ROM in 2023. It had an estimated production of 1.000Mt of silver in 2023"
+    },
+    {
+      name: "Peñasquito Mine",
+      coordinates: [-101.716414, 24.657013],
+      resources: ["silver"],
+      ownership: "Newmont/Silver Standard Resources",
+      location: "San Dimas, Mexico",
+      details: "The Peñasquito Mine is a silver mine located in San Dimas, Mexico. Owned by Newmont/Silver Standard Resources, the greenfield project produced an estimated 1.000Mt of ROM in 2023. It had an estimated production of 1.000Mt of silver in 2023"
+    },
+    {
+      name: "Cannington Mine",
+      coordinates: [140.906505, -21.856488],
+      resources: ["silver"],
+      ownership: "Newmont",
+      location: "Queensland, Australia",
+      details: "The Cannington Mine is a gold mine located in Queensland, Australia. Owned by Newmont, the greenfield project produced an estimated 1.000Mt of ROM in 2023. It had an estimated production of 1.000Mt of gold in 2023"
+    },
+    {
+      name: "Nevada Gold Mines",
+      coordinates: [-115.783889, 40.829256],
+      resources: ["gold"],
+      ownership: "Newmont",
+      location: "Nevada, USA",
+      details: "The Nevada Gold Mines is a gold mine located in Nevada, USA. Owned by Newmont, the greenfield project produced an estimated 1.000Mt of ROM in 2023. It had an estimated production of 1.000Mt of gold in 2023"
+    },
+    {
+      name: "Lihir Mine",
+      coordinates: [147.3667, -7.3667],
+      resources: ["gold"],
+      ownership: "Newcrest",
+      location: "Papua New Guinea",
+      details: "The Lihir Mine is a gold mine located in Papua New Guinea. Owned by Newcrest, the greenfield project produced an estimated 1.000Mt of ROM in 2023. It had an estimated production of 1.000Mt of gold in 2023"
+    },
+    //Diamond mines
+    {
+      name: "Kao Mine",
+      coordinates: [28.629570, -29.021307],
+      resources: ["diamonds"],
+      ownership: "Storm Mountain Diamonds",
+      location: "Butha-Buthe, Lesotho",
+      details: "The Kao Mine is a surface mine situated in Butha-Buthe, Lesotho. Owned by Namakwa Diamonds, the brownfield mine produced an estimated 13.31 million carats of diamond in 2023. The mine will operate until 2034"
+    },
+    {
+      name: "Jwaneng Mine",
+      coordinates: [24.695647, -24.532317],
+      resources: ["diamonds"],
+      ownership: "State of Botswana",
+      location: "Botswana",
+      details: "Located in Kgalagadi District, Botswana, the Jwaneng Mine is owned by Government of Botswana. The surface mine produced an estimated 11.86 million carats of diamond in 2023. The mine will operate until 2036"
+    },
+    //Africa mines
+    {
+      name: "Catoca Mine",
+      coordinates: [20.300057, -9.407280],
+      resources: ["diamonds"],
+      ownership: "Endiama EP",
+      location: "Angola",
+      details: "The Catoca Mine is a surface mine situated in Lunda Sul, Angola. The greenfield mine produced an estimated 6.42 million carats of diamond in 2023. The expected mine closure date is 2037"
+    },
+
+    //Asia mines
+    {
+      name: "Green Mine",
+      coordinates: [104.2667, 30.6667],
+      resources: ["phosphate"],
+      ownership: "China National Gold Group",
+      location: "Sichuan, China",
+      details: "The Green Mine is a phosphate mine owned by Sichuan Lomon. Located in Sichuan, China, the greenfield mine produced approximately 61.933Mt of ROM in 2023. It had an estimated production of 37.16 mtpa of phosphate in 2023"
+    },
+
+    {
+      name: "Northern Shaanxi Mine",
+      coordinates: [110.1667, 34.0667],
+      resources: ["coal"],
+      ownership: "Shaanxi Gold Mining",
+      location: "Shaanxi, China",
+      details: "The Northern Shaanxi Mine is a coal mine located in Shaanxi, China. Owned by Shaanxi Coal Industry Group, the greenfield project produced an estimated 10.000Mt of ROM in 2023. It had an estimated production of 1.5 million tonnes of coal in 2023"
+    },
+    {
+      name: "Julong Copper Mine",
+      coordinates: [91.090073, 29.636152],
+      resources: ["copper"],
+      ownership: "China National Gold Group",
+      location: "Tibet, China",
+      details: "The Julong Copper Mine is a copper mine located in Tibet, China. Owned by Zijin Mining Group, the greenfield project produced an estimated 43.566Mt of ROM in 2023."
+    },
+    {
+      name: "Weda Bay Project",
+      coordinates: [127.957318, 0.548746],
+      resources: ["nickel"],
+      ownership: "PT Vale Indonesia Tbk",
+      location: "Sulawesi, Indonesia",
+      details: "The Weda Bay Project is a nickel mining project in Maluku, Indonesia. The greenfield project is owned by Tsingshan Holding Group and is due to operate until 2069. The mine produced an estimated 39.709Mt of ROM in 2023. It had an estimated production of 516.7 thousand tonnes of nickel in 2023"
+    },
+    // Oil Operations
+    {
+      name: "Orinoco Belt",
+      coordinates: [-64.826469, 7.699111],
+      resources: ["petroleum"],
+      ownership: "State Owned",
+      location: "Venuezala",
+      details: "The Orinoco Belt is a territory in the southern strip of the eastern Orinoco River Basin in Venezuela which overlies the world's largest deposits of petroleum."
+    },
+    {
+      name: "Ghawar Field",
+      coordinates: [49.9833, 25.4333],
+      resources: ["petroleum"],
+      ownership: "Saudi Aramco",
+      location: "Eastern Province, Saudi Arabia",
+      details: "World's largest oil field, producing ~3.8 million barrels per day (bpd). Discovered in 1948, holds ~70 billion barrels of reserves."
+    },
+    {
+      name: "Burgan Field",
+      coordinates: [47.9833, 29.0667],
+      resources: ["petroleum"],
+      ownership: "Kuwait Oil Company",
+      location: "Kuwait",
+      details: "Second-largest oil field globally, producing ~1.7 million bpd. Discovered in 1938, holds ~66 billion barrels of reserves."
+    },
+    {
+      name: "Prudhoe Bay Oil Field",
+      coordinates: [-148.3333, 70.3167],
+      resources: ["petroleum", "natural gas"],
+      ownership: "BP (26%), ExxonMobil (36%), ConocoPhillips (36%)",
+      location: "North Slope, Alaska, USA",
+      details: "Largest oil field in North America, producing ~500,000 bpd. Discovered in 1968, also produces natural gas."
+    },
+    {
+      name: "Safaniya Field",
+      coordinates: [49.3167, 28.1333],
+      resources: ["petroleum"],
+      ownership: "Saudi Aramco",
+      location: "Persian Gulf, Saudi Arabia",
+      details: "World's largest offshore oil field, producing ~1.2 million bpd. Discovered in 1951, holds ~37 billion barrels of reserves."
+    },
+    {
+      name: "Rumaila Field",
+      coordinates: [47.4167, 30.1667],
+      resources: ["petroleum"],
+      ownership: "Iraq National Oil Company, BP, CNPC",
+      location: "Basra, Iraq",
+      details: "Produces ~1.5 million bpd. One of Iraq's largest oil fields, operational since 1953, with ~17 billion barrels of reserves."
+    },
+
+    // Gas Operations
+    {
+      name: "South Pars/North Dome Field",
+      coordinates: [52.5833, 26.2833],
+      resources: ["natural gas", "petroleum"],
+      ownership: "QatarEnergy (Qatar), NIOC (Iran)",
+      location: "Persian Gulf, Qatar/Iran",
+      details: "World's largest gas field, producing ~1.8 trillion cubic feet of gas annually. Shared between Qatar and Iran, holds ~1,800 trillion cubic feet of reserves."
+    },
+    {
+      name: "Urengoy Field",
+      coordinates: [74.5333, 65.9667],
+      resources: ["natural gas", "petroleum"],
+      ownership: "Gazprom",
+      location: "Yamal-Nenets Region, Russia",
+      details: "Produces ~250 billion cubic meters of gas annually. One of world's largest gas fields, operational since 1978."
+    },
+    {
+      name: "Turkmenistan Galkynysh Field",
+      coordinates: [53.8333, 37.6667],
+      resources: ["natural gas"],
+      ownership: "Türkmengaz",
+      location: "Mary Province, Turkmenistan",
+      details: "Produces ~80 billion cubic meters of gas annually. Second-largest gas field globally, with ~700 trillion cubic feet of reserves."
+    },
+    {
+      name: "Troll Field",
+      coordinates: [3.7167, 60.6667],
+      resources: ["natural gas", "petroleum"],
+      ownership: "Equinor (30.58%), Petoro (56%), Shell (8.1%)",
+      location: "North Sea, Norway",
+      details: "Produces ~40 billion cubic meters of gas annually. Europe's largest offshore gas field, operational since 1996."
+    },
+    {
+      name: "Ichthys Field",
+      coordinates: [123.6167, -12.6667],
+      resources: ["natural gas", "condensate"],
+      ownership: "INPEX (62.245%), TotalEnergies (30%)",
+      location: "Timor Sea, Australia",
+      details: "Produces ~8.9 million tonnes of LNG annually. Operational since 2018, with ~12 trillion cubic feet of gas reserves."
+    }
+
   ]
 
   // Mine gear icon effect: only run when map is ready and style is loaded
   useEffect(() => {
-    if (!map.current || !mapReady) return;
-    
+    if (!map.current || !mapReady || !map.current.isStyleLoaded()) return;
+
     const mineFeatures = mineSites.map((site, i) => ({
       type: 'Feature' as const,
-      geometry: { 
-        type: 'Point' as const, 
+      geometry: {
+        type: 'Point' as const,
         coordinates: site.coordinates // Dot icons at original position (above)
       },
       properties: { name: site.name, id: `mine-${i}`, details: site.details, location: site.location },
@@ -2805,8 +2918,8 @@ details: "The Orinoco Belt is a territory in the southern strip of the eastern O
 
     // Move addMineLayer definition here, before addDotImageAndLayer
     function addMineLayer() {
-      if (!map.current || mineLayersAdded) return;
-      
+      if (!map.current || !map.current.isStyleLoaded() || mineLayersAdded) return;
+
       // Add mine sites as a GeoJSON source
       if (!map.current.getSource('mine-sites')) {
         map.current.addSource('mine-sites', {
@@ -2821,7 +2934,7 @@ details: "The Orinoco Belt is a territory in the southern strip of the eastern O
       type ResourceFeature = GeoJSON.Feature<GeoJSON.Point, { resource: string; icon: string; offset: [number, number]; mine: string; iconSize: number }>;
       const resourceFeatures: ResourceFeature[] = [];
       const resourceIconNames = new Set<string>();
-      
+
       mineSites.forEach(site => {
         site.resources.forEach((resource, idx) => {
           // Use iconMap to get the icon name
@@ -2829,17 +2942,17 @@ details: "The Orinoco Belt is a territory in the southern strip of the eastern O
           if (iconKey && (iconMap as any)[iconKey]) {
             const iconName = (iconMap as any)[iconKey].name;
             resourceIconNames.add(iconName);
-            
+
             // Calculate horizontal offset for this resource (spread them out horizontally)
             const offsetX = (idx - (site.resources.length - 1) / 2) * 2 - 0.5; // Slightly left of dot
             const offsetY = 0.5; // Below the dot icon
-            
+
             // Calculate descending icon size - first icon largest, then progressively smaller
             const baseSize = 1.2; // Starting size for first icon
             const sizeDecrement = 0.7; // How much smaller each subsequent icon gets
             const minSize = 0.7; // Minimum size to prevent icons from becoming too small
             const iconSize = Math.max(baseSize - (idx * sizeDecrement), minSize);
-            
+
             resourceFeatures.push({
               type: 'Feature',
               geometry: {
@@ -2865,13 +2978,13 @@ details: "The Orinoco Belt is a territory in the southern strip of the eastern O
           return iconDef ? { component: iconDef.component as IconType, name: iconDef.name, color: iconDef.color } : null;
         })
         .filter((iconDef): iconDef is { component: IconType; name: string; color: string } => iconDef !== null);
-      
+
       // Add the dot icon to the icons to add
       const dotIcon = iconMap.dot;
       if (dotIcon) {
         iconsToAdd.push({ component: dotIcon.component as IconType, name: dotIcon.name, color: dotIcon.color });
       }
-      
+
       if (iconsToAdd.length > 0) {
         addReactIconsToMapbox(map.current, iconsToAdd);
       }
@@ -2949,16 +3062,16 @@ details: "The Orinoco Belt is a territory in the southern strip of the eastern O
         if (!map.current.getSource('mine-clickable-areas')) {
           const clickableFeatures = mineSites.map((site, i) => ({
             type: 'Feature' as const,
-            geometry: { 
-              type: 'Point' as const, 
+            geometry: {
+              type: 'Point' as const,
               coordinates: site.coordinates // Same position as dot icons (above)
             },
-            properties: { 
-              name: site.name, 
-              id: `mine-clickable-${i}`, 
-              details: site.details, 
+            properties: {
+              name: site.name,
+              id: `mine-clickable-${i}`,
+              details: site.details,
               location: site.location,
-              ownership: site.ownership 
+              ownership: site.ownership
             },
           }));
 
@@ -2986,10 +3099,10 @@ details: "The Orinoco Belt is a territory in the southern strip of the eastern O
         // Function to create and show popup
         const showPopup = (e: mapboxgl.MapLayerMouseEvent) => {
           if (!e.features || !e.features.length) return;
-          
+
           // Prevent map interactions when clicking on mine areas
           e.preventDefault();
-          
+
           const feature = e.features[0];
           const coordinates = (feature.geometry.type === 'Point' && Array.isArray(feature.geometry.coordinates) && feature.geometry.coordinates.length === 2)
             ? feature.geometry.coordinates as [number, number]
@@ -2999,12 +3112,12 @@ details: "The Orinoco Belt is a territory in the southern strip of the eastern O
           const location = props?.location || '';
           const details = props?.details || '';
           const ownership = props?.ownership || '';
-          
+
           // Close existing popup
           if (currentPopup) {
             currentPopup.remove();
           }
-          
+
           // Create popup content with hover-friendly styling
           const popupContent = `
             <div id="mine-popup" style="
@@ -3032,8 +3145,8 @@ details: "The Orinoco Belt is a territory in the southern strip of the eastern O
               ">Click anywhere outside to close</div>
             </div>
           `;
-          
-          currentPopup = new mapboxgl.Popup({ 
+
+          currentPopup = new mapboxgl.Popup({
             closeOnClick: false, // Don't auto-close on map click
             closeButton: true,   // Show close button
             maxWidth: '400px',
@@ -3049,7 +3162,7 @@ details: "The Orinoco Belt is a territory in the southern strip of the eastern O
             popupElement.addEventListener('mouseenter', () => {
               // Keep popup open when hovering over it
             });
-            
+
             popupElement.addEventListener('mouseleave', () => {
               // Optional: auto-close after a delay when mouse leaves popup
               setTimeout(() => {
@@ -3065,18 +3178,18 @@ details: "The Orinoco Belt is a territory in the southern strip of the eastern O
         // Add click handlers for both the dot icons and larger clickable areas
         map.current.on('click', 'mine-dots', showPopup);
         map.current.on('click', 'mine-clickable-circles', showPopup);
-        
+
         // Add hover functionality - show popup on hover
         map.current.on('mouseenter', 'mine-clickable-circles', showPopup);
         map.current.on('mouseenter', 'mine-dots', showPopup);
-        
+
         // Add hover effects for better UX
         map.current.on('mouseenter', 'mine-clickable-circles', () => {
           if (map.current) {
             map.current.getCanvas().style.cursor = 'pointer';
           }
         });
-        
+
         map.current.on('mouseleave', 'mine-clickable-circles', () => {
           if (map.current) {
             map.current.getCanvas().style.cursor = '';
@@ -3110,8 +3223,8 @@ details: "The Orinoco Belt is a territory in the southern strip of the eastern O
 
         // Close popup when clicking elsewhere on the map
         map.current.on('click', (e) => {
-          const features = map.current?.queryRenderedFeatures(e.point, { 
-            layers: ['mine-dots', 'mine-clickable-circles'] 
+          const features = map.current?.queryRenderedFeatures(e.point, {
+            layers: ['mine-dots', 'mine-clickable-circles']
           });
           if (!features || !features.length) {
             if (currentPopup) {
@@ -3120,7 +3233,7 @@ details: "The Orinoco Belt is a territory in the southern strip of the eastern O
             }
           }
         });
-        
+
         clickHandlersAdded = true;
       }
 
@@ -3129,7 +3242,7 @@ details: "The Orinoco Belt is a territory in the southern strip of the eastern O
 
     // Now define addDotImageAndLayer, which can call addMineLayer
     function addDotImageAndLayer() {
-      if (!map.current) return;
+      if (!map.current || !map.current.isStyleLoaded()) return;
       // The dot icon is already added via addReactIconsToMapbox in addMineLayer
       addMineLayer();
     }
@@ -3137,15 +3250,19 @@ details: "The Orinoco Belt is a territory in the southern strip of the eastern O
     // Add on style load only once
     const mapInstance = map.current;
     function handleStyleData() {
-      if (!mineLayersAdded) {
+      if (!mineLayersAdded && map.current && map.current.isStyleLoaded()) {
         console.log('Map style loaded, adding mine sites and dot icons');
         addDotImageAndLayer();
       }
     }
-    
-    mapInstance.on('styledata', handleStyleData);
-    // Initial add
-    handleStyleData();
+
+    // Only add the event listener if the style isn't already loaded
+    if (!map.current.isStyleLoaded()) {
+      mapInstance.on('styledata', handleStyleData);
+    } else {
+      // If style is already loaded, call immediately
+      handleStyleData();
+    }
 
     // Cleanup function
     return () => {
@@ -3171,7 +3288,7 @@ details: "The Orinoco Belt is a territory in the southern strip of the eastern O
 
   console.log('[MapComponent] Map component rendered');
 
-  
+
 
   return (
     <div className="relative h-screen w-screen">
@@ -3227,7 +3344,7 @@ details: "The Orinoco Belt is a territory in the southern strip of the eastern O
       >
         {spinEnabled ? "Pause" : "Rotate"}
       </button>
-      
+
       {/* Only render icon components when a country is selected */}
       {highlightedCountryId && (
         <>

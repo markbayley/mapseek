@@ -6,6 +6,13 @@ import ImportPartnersChart from "./ImportPartnersChart";
 import { CircularProgress } from "./CircularProgress";
 import { iconMap } from '../utils/iconMap';
 import InflationChart from './InflationChart';
+import UnemploymentChart from './UnemploymentChart';
+import GdpGrowthChart from './GdpGrowthChart';
+import GdpCompositionChart from './GdpCompositionChart';
+import LabourParticipationChart from './LabourParticipationChart';
+import GovernmentDebtChart from './GovernmentDebtChart';
+import ExportsChart from './ExportsChart';
+import ImportsChart from './ImportsChart';
 
 interface InfoPanelProps {
   gdpFilter: number;
@@ -43,6 +50,8 @@ const InfoPanel: React.FC<InfoPanelProps> = ({
   const panelRef = useRef<HTMLDivElement>(null);
   // Add a local state to track the actually rendered icons
   const [renderedIconElements, setRenderedIconElements] = useState<React.ReactNode>(null);
+  // Add state for active tab - default to 'inflation'
+  const [activeTab, setActiveTab] = useState<'inflation' | 'unemployment' | 'gdp'>('inflation');
   
   // When infoPanelIconElements changes, update our local state
   useEffect(() => {
@@ -123,9 +132,25 @@ const InfoPanel: React.FC<InfoPanelProps> = ({
     } else if (subFilter === 'import-partners') {
       return <ImportPartnersChart importsPartners={importsPartners || ''}/>; 
     } else if (subFilter === 'exports') {
-      return <ExportPartnersChart exportsPartners={exportsPartners || ''}/>; 
+      // Display both ExportsChart and ExportPartnersChart
+      return (
+        <>
+          {Array.isArray(selectedEconomy) && selectedEconomy[13] && (
+            <ExportsChart exportSeries={selectedEconomy[13]} />
+          )}
+          <ExportPartnersChart exportsPartners={exportsPartners || ''} />
+        </>
+      );
     } else if (subFilter === 'imports') {
-      return <ImportPartnersChart importsPartners={importsPartners || ''}/>; 
+      // Display both ImportsChart and ImportPartnersChart
+      return (
+        <>
+          {Array.isArray(selectedEconomy) && selectedEconomy[14] && (
+            <ImportsChart importSeries={selectedEconomy[14]} />
+          )}
+          <ImportPartnersChart importsPartners={importsPartners || ''} />
+        </>
+      );
     } else if (subFilter === 'Overview') {
       // Overview: don't show any specific partner charts
       return null;
@@ -143,55 +168,106 @@ const InfoPanel: React.FC<InfoPanelProps> = ({
     if (Array.isArray(selectedEconomy)) {
       return (
         <>
-         <div className="bg-white text-black pl-2 py-2 rounded-lg icon-container ">
+         <div className="bg-white text-black p-2 rounded-lg icon-container ">
           <div className="text-2xl font-semibold"> {selectedEconomy[0]}</div>
-          <div className=" pt-2">
-            <div className="text-[16px] capitalize-first-letter">{typeof selectedEconomy[1] === 'string' ? selectedEconomy[1].replace(/^<p>|<\/p>$/gi, '') : selectedEconomy[1]}</div>
-          </div>
-         
+          {subFilter === 'Overview' && (
+            <div className=" pt-2">
+              <div className="text-[16px] capitalize-first-letter">{typeof selectedEconomy[1] === 'string' ? selectedEconomy[1].replace(/^<p>|<\/p>$/gi, '') : selectedEconomy[1]}</div>
+            </div>
+          )}
         
         
            </div>
-           {(subFilter !== 'exports' && subFilter !== 'imports') && (
+           {(subFilter !== 'exports' && subFilter !== 'imports' && subFilter !== 'Resources') && (
+           <>
            <div className="bg-white text-black p-2 rounded-lg icon-container mt-2">
-           <div className="flex flex-row justify-between items-center gap-2" >
+           <div className="flex flex-row justify-around items-center gap-2" >
             
-           <CircularProgress
-              value={parseFloat(selectedEconomy[4])}
-              label="Inflation"
-              color="#38bdf8"
-              unit="%"
-              max={20}
-            />
-           
-            <CircularProgress
-              value={parseFloat(selectedEconomy[3])}
-              label="Debt/GDP"
-              color="#4ade80"
-              unit="%"
-              max={150}
-            />
+           <div 
+              className={`cursor-pointer transition-all duration-200 ${
+                activeTab === 'inflation' 
+                  ? 'transform scale-105 ring-2 ring-blue-300 px-3 rounded' 
+                  : 'hover:transform hover:scale-102'
+              }`}
+              onClick={() => setActiveTab('inflation')}
+            >
+              <CircularProgress
+                value={parseFloat(selectedEconomy[4])}
+                label="Inflation"
+                color="#38bdf8"
+                unit="%"
+                max={20}
+              />
+            </div>
 
-             <CircularProgress
-              value={parseFloat(selectedEconomy[2])}
-              label="Unemployment"
-              color="#f59e42"
-              unit="%"
-              max={20}
-            />
+            <div 
+              className={`cursor-pointer transition-all duration-200 ${
+                activeTab === 'unemployment' 
+                  ? 'transform scale-105 ring-2 ring-orange-300 px-3 rounded' 
+                  : 'hover:transform hover:scale-102'
+              }`}
+              onClick={() => setActiveTab('unemployment')}
+            >
+              <CircularProgress
+                value={parseFloat(selectedEconomy[2])}
+                label="Unemployment"
+                color="#f59e42"
+                unit="%"
+                max={20}
+              />
+            </div>
            
-            <CircularProgress
-              value={parseFloat(selectedEconomy[5])}
-              label="GDP/capita"
-              color="#6366f1"
-              unit="k"
-              max={100}
-            />
+            <div 
+              className={`cursor-pointer transition-all duration-200 ${
+                activeTab === 'gdp' 
+                  ? 'transform scale-105 ring-2 ring-indigo-300 px-3 rounded' 
+                  : 'hover:transform hover:scale-102'
+              }`}
+              onClick={() => setActiveTab('gdp')}
+            >
+              <CircularProgress
+                value={parseFloat(selectedEconomy[10])}
+                label="GDP"
+                color="#6366f1"
+                unit="%"
+                max={100}
+              />
+            </div>
           </div>
           </div>
+          
+          {/* Render the corresponding chart based on active tab */}
+          {activeTab === 'inflation' && (
+            <>
+              {selectedEconomy[8] && (
+                <InflationChart inflationSeries={selectedEconomy[8]} />
+              )}
+              {selectedEconomy[3] && (
+                <GovernmentDebtChart debtPercentage={selectedEconomy[3]} />
+              )}
+            </>
+          )}
+          {activeTab === 'unemployment' && (
+            <>
+              {selectedEconomy[10] && (
+                <UnemploymentChart unemploymentSeries={selectedEconomy[10]} />
+              )}
+              {selectedEconomy[12] && (
+                <LabourParticipationChart labourParticipation={selectedEconomy[12]} />
+              )}
+            </>
+          )}
+          {activeTab === 'gdp' && selectedEconomy[11] && (
+            <>
+              <GdpGrowthChart gdpSeries={selectedEconomy[11]} />
+              <GdpCompositionChart gdpComposition={selectedEconomy[9]} />
+            </>
+          )}
+          </>
            )}
           {/* <div className="text-black"> {selectedEconomy[7]}</div> */}
-          <div key={`icon-container-${subFilter}`} className="icon-container grid grid-cols-4 gap-x-3 gap-y-2 bg-white p-2 rounded-lg shadow-md mt-2 ">
+         { subFilter !== 'Overview' && (
+          <div key={`icon-container-${subFilter}`} className="icon-container grid grid-cols-4 gap-x-3 gap-y-2 bg-white p-2 rounded-lg mt-2 ">
             {infoPanelIcons &&
               (subFilter === 'Resources'
                 ? infoPanelIcons
@@ -214,50 +290,48 @@ const InfoPanel: React.FC<InfoPanelProps> = ({
                   </div>
                 );
               })}
-          </div>
-          {selectedEconomy[8] && subFilter === 'Overview' && (
-            <InflationChart inflationSeries={selectedEconomy[8]} />
+            </div>
+    )  }
+            {/* {selectedEconomy[9] && subFilter === 'Overview' && (
+              <GdpCompositionChart gdpComposition={selectedEconomy[9]} />
+              
+            )} */}
+            {renderPartnerCharts()}
+          </>
+        );
+      } else if (selectedEconomy) {
+        return (
+          <>
+            <div className="bg-white text-black text-lg p-3 rounded-lg icon-container">{selectedEconomy}</div>
+            <div key={`icon-container-${subFilter}`} className="icon-container rounded-lg">
+              {renderedIconElements}
+            </div>
+            {renderPartnerCharts()}
+          </>
+        );
+      } else {
+        return null;
+      }
+    };
+    
+    return (
+      <div
+        id="info"
+        className="bg-transparent rounded absolute top-16 left-4 z-10 text-xs text-white max-w-xs"
+        ref={panelRef}
+      >
+        <div className="text-xs text-white">
+     
+          {gdpFilter == 0 ? (
+            renderEconomyInfo()
+          ) : gdpFilter == 1000000000000 ? (
+            selectedSociety
+          ) : (
+            selectedGovernment
           )}
-          {renderPartnerCharts()}
-        </>
-      );
-    } else if (selectedEconomy) {
-      return (
-        <>
-          <div className="bg-white text-black text-lg p-3 rounded-lg icon-container">{selectedEconomy}</div>
-          <div key={`icon-container-${subFilter}`} className="icon-container rounded-lg shadow-md">
-            {renderedIconElements}
-          </div>
-          {renderPartnerCharts()}
-        </>
-      );
-    } else {
-      return null;
-    }
+        </div>
+      </div>
+    );
   };
   
-  return (
-    <div
-      id="info"
-      className="bg-transparent rounded absolute top-16 left-4 z-10 shadow-md text-xs text-white max-w-xs"
-      ref={panelRef}
-    >
-      <div className="text-xs text-white">
-        {/* {gdpFilter == 0 && (
-          <div style={{ position: 'absolute', top: '0', right: '0', background: 'black', color: 'white', padding: '5px', zIndex: 1000, maxWidth: '200px', overflow: 'hidden' }}>
-            Debug - SubFilter: {subFilter}
-          </div>
-        )} */}
-        {gdpFilter == 0 ? (
-          renderEconomyInfo()
-        ) : gdpFilter == 1000000000000 ? (
-          selectedSociety
-        ) : (
-          selectedGovernment
-        )}
-      </div>
-    </div>
-  );
-};
-
-export default InfoPanel;
+  export default InfoPanel;

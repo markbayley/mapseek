@@ -4,17 +4,17 @@ import { Line } from 'react-chartjs-2';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
-interface InflationChartProps {
-  inflationSeries: string[];
+interface ExportsChartProps {
+  exportSeries: string[];
 }
 
-interface InflationData {
+interface ExportData {
   year: number;
-  inflation: number;
+  value: number;
   originalValue: string;
 }
 
-const InflationChart: React.FC<InflationChartProps> = ({ inflationSeries }) => {
+const ExportsChart: React.FC<ExportsChartProps> = ({ exportSeries }) => {
   const [chartData, setChartData] = useState<{
     labels: string[];
     datasets: {
@@ -32,45 +32,54 @@ const InflationChart: React.FC<InflationChartProps> = ({ inflationSeries }) => {
     }[];
   } | null>(null);
 
-  // Transform the inflation series data into chart format
+  // Transform the export series data into chart format
   useEffect(() => {
     // Debug logging
-    console.log('InflationChart received data:', inflationSeries);
+    console.log('ExportsChart received data:', exportSeries);
     
-    // Ensure inflationSeries is an array
-    if (!Array.isArray(inflationSeries)) {
-      console.log('InflationChart: inflationSeries is not an array:', typeof inflationSeries);
+    // Ensure exportSeries is an array
+    if (!Array.isArray(exportSeries)) {
+      console.log('ExportsChart: exportSeries is not an array:', typeof exportSeries);
       setChartData(null);
       return;
     }
 
     try {
-      // Transform the inflation series data into chart format
-      const processedData: InflationData[] = inflationSeries
+      // Transform the export series data into chart format
+      const processedData: ExportData[] = exportSeries
         .map((value, index) => {
           // Handle empty or null values
           if (!value || typeof value !== 'string') {
             return null;
           }
           
-          // Extract numeric value from strings like "2.5%", "2.5", "-1.2%", etc.
-          const cleanValue = value.replace(/[%\s]/g, '').trim();
-          const numericValue = parseFloat(cleanValue);
+          // Extract numeric value from strings like "$123.4 billion", "$12.3 million", etc.
+          const cleanValue = value.replace(/[\$,\s]/g, '').toLowerCase();
+          let numericValue = 0;
+          
+          if (cleanValue.includes('billion')) {
+            numericValue = parseFloat(cleanValue.replace('billion', '')) * 1000;
+          } else if (cleanValue.includes('million')) {
+            numericValue = parseFloat(cleanValue.replace('million', ''));
+          } else {
+            // Try to parse as a direct number
+            numericValue = parseFloat(cleanValue);
+          }
           
           return {
             year: 2024 - index, // Start from 2024 and go backwards
-            inflation: isNaN(numericValue) ? null : numericValue,
+            value: isNaN(numericValue) ? null : numericValue,
             originalValue: value.trim()
           };
         })
-        .filter((item): item is InflationData => item !== null && item.inflation !== null) // Remove invalid data points
-        .reverse(); // Reverse to show chronological order (2021, 2022, 2023, 2024)
+        .filter((item): item is ExportData => item !== null && item.value !== null) // Remove invalid data points
+        .reverse(); // Reverse to show chronological order (2017, 2018, 2019, etc.)
 
-      console.log('InflationChart processed data:', processedData);
+      console.log('ExportsChart processed data:', processedData);
 
       // Don't render if no valid data
       if (processedData.length === 0) {
-        console.log('InflationChart: No valid data, setting chartData to null');
+        console.log('ExportsChart: No valid data, setting chartData to null');
         setChartData(null);
         return;
       }
@@ -80,13 +89,13 @@ const InflationChart: React.FC<InflationChartProps> = ({ inflationSeries }) => {
         labels: processedData.map(item => item.year.toString()),
         datasets: [
           {
-            label: 'Inflation Rate (%)',
-            data: processedData.map(item => item.inflation),
-            borderColor: '#38bdf8',
-            backgroundColor: 'rgba(56, 189, 248, 0.1)',
+            label: 'Exports ($ millions)',
+            data: processedData.map(item => item.value),
+            borderColor: '#ef4444',
+            backgroundColor: 'rgba(239, 68, 68, 0.1)',
             borderWidth: 3,
             pointBackgroundColor: '#ffffff',
-            pointBorderColor: '#3b82f6',
+            pointBorderColor: '#dc2626',
             pointBorderWidth: 2,
             pointRadius: 4,
             pointHoverRadius: 6,
@@ -95,17 +104,17 @@ const InflationChart: React.FC<InflationChartProps> = ({ inflationSeries }) => {
         ],
       });
     } catch (error) {
-      console.error('Error parsing inflation data:', error);
+      console.error('Error parsing export data:', error);
       setChartData(null);
     }
-  }, [inflationSeries]);
+  }, [exportSeries]);
 
   if (!chartData) {
     return (
       <div className="bg-white text-black p-3 rounded-lg icon-container mt-2">
-        <div className="text-md font-semibold mb-3">Inflation Rate Trend</div>
+        <div className="text-md font-semibold mb-3">Export Trend</div>
         <div className="text-gray-500 text-center py-8">
-          No inflation data available for this country
+          No export data available for this country
         </div>
       </div>
     );
@@ -113,7 +122,7 @@ const InflationChart: React.FC<InflationChartProps> = ({ inflationSeries }) => {
 
   return (
     <div className="bg-white text-black p-2 rounded-lg icon-container mt-2">
-      <div className="text-md font-semibold">Inflation</div>
+      <div className="text-md font-semibold">Exports</div>
       <div style={{ width: '100%', height: '120px' }}>
         <Line 
           data={chartData} 
@@ -130,7 +139,7 @@ const InflationChart: React.FC<InflationChartProps> = ({ inflationSeries }) => {
                     const dataIndex = context.dataIndex;
                     const year = context.label;
                     const value = context.raw as number;
-                    return `${year}: ${value}%`;
+                    return `${year}: $${value.toFixed(1)}M`;
                   }
                 }
               }
@@ -160,7 +169,7 @@ const InflationChart: React.FC<InflationChartProps> = ({ inflationSeries }) => {
             elements: {
               point: {
                 hoverBackgroundColor: '#ffffff',
-                hoverBorderColor: '#3b82f6',
+                hoverBorderColor: '#dc2626',
                 hoverBorderWidth: 2,
               }
             }
@@ -171,4 +180,4 @@ const InflationChart: React.FC<InflationChartProps> = ({ inflationSeries }) => {
   );
 };
 
-export default InflationChart; 
+export default ExportsChart; 

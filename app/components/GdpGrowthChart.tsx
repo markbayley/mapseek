@@ -4,17 +4,17 @@ import { Line } from 'react-chartjs-2';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
-interface InflationChartProps {
-  inflationSeries: string[];
+interface GdpGrowthChartProps {
+  gdpSeries: string[];
 }
 
-interface InflationData {
+interface GdpGrowthData {
   year: number;
-  inflation: number;
+  gdpGrowth: number;
   originalValue: string;
 }
 
-const InflationChart: React.FC<InflationChartProps> = ({ inflationSeries }) => {
+const GdpGrowthChart: React.FC<GdpGrowthChartProps> = ({ gdpSeries }) => {
   const [chartData, setChartData] = useState<{
     labels: string[];
     datasets: {
@@ -32,21 +32,21 @@ const InflationChart: React.FC<InflationChartProps> = ({ inflationSeries }) => {
     }[];
   } | null>(null);
 
-  // Transform the inflation series data into chart format
+  // Transform the GDP growth series data into chart format
   useEffect(() => {
     // Debug logging
-    console.log('InflationChart received data:', inflationSeries);
+    console.log('GdpGrowthChart received data:', gdpSeries);
     
-    // Ensure inflationSeries is an array
-    if (!Array.isArray(inflationSeries)) {
-      console.log('InflationChart: inflationSeries is not an array:', typeof inflationSeries);
+    // Ensure gdpSeries is an array
+    if (!Array.isArray(gdpSeries)) {
+      console.log('GdpGrowthChart: gdpSeries is not an array:', typeof gdpSeries);
       setChartData(null);
       return;
     }
 
     try {
-      // Transform the inflation series data into chart format
-      const processedData: InflationData[] = inflationSeries
+      // Transform the GDP growth series data into chart format
+      const processedData: GdpGrowthData[] = gdpSeries
         .map((value, index) => {
           // Handle empty or null values
           if (!value || typeof value !== 'string') {
@@ -59,18 +59,18 @@ const InflationChart: React.FC<InflationChartProps> = ({ inflationSeries }) => {
           
           return {
             year: 2024 - index, // Start from 2024 and go backwards
-            inflation: isNaN(numericValue) ? null : numericValue,
+            gdpGrowth: isNaN(numericValue) ? null : numericValue,
             originalValue: value.trim()
           };
         })
-        .filter((item): item is InflationData => item !== null && item.inflation !== null) // Remove invalid data points
+        .filter((item): item is GdpGrowthData => item !== null && item.gdpGrowth !== null) // Remove invalid data points
         .reverse(); // Reverse to show chronological order (2021, 2022, 2023, 2024)
 
-      console.log('InflationChart processed data:', processedData);
+      console.log('GdpGrowthChart processed data:', processedData);
 
       // Don't render if no valid data
       if (processedData.length === 0) {
-        console.log('InflationChart: No valid data, setting chartData to null');
+        console.log('GdpGrowthChart: No valid data, setting chartData to null');
         setChartData(null);
         return;
       }
@@ -80,13 +80,13 @@ const InflationChart: React.FC<InflationChartProps> = ({ inflationSeries }) => {
         labels: processedData.map(item => item.year.toString()),
         datasets: [
           {
-            label: 'Inflation Rate (%)',
-            data: processedData.map(item => item.inflation),
-            borderColor: '#38bdf8',
-            backgroundColor: 'rgba(56, 189, 248, 0.1)',
+            label: 'GDP Growth Rate (%)',
+            data: processedData.map(item => item.gdpGrowth),
+            borderColor: '#6366f1',
+            backgroundColor: 'rgba(99, 102, 241, 0.1)',
             borderWidth: 3,
             pointBackgroundColor: '#ffffff',
-            pointBorderColor: '#3b82f6',
+            pointBorderColor: '#6366f1',
             pointBorderWidth: 2,
             pointRadius: 4,
             pointHoverRadius: 6,
@@ -95,17 +95,17 @@ const InflationChart: React.FC<InflationChartProps> = ({ inflationSeries }) => {
         ],
       });
     } catch (error) {
-      console.error('Error parsing inflation data:', error);
+      console.error('Error parsing GDP growth data:', error);
       setChartData(null);
     }
-  }, [inflationSeries]);
+  }, [gdpSeries]);
 
   if (!chartData) {
     return (
       <div className="bg-white text-black p-3 rounded-lg icon-container mt-2">
-        <div className="text-md font-semibold mb-3">Inflation Rate Trend</div>
+        <div className="text-md font-semibold mb-3">GDP Growth Rate Trend</div>
         <div className="text-gray-500 text-center py-8">
-          No inflation data available for this country
+          No GDP growth data available for this country
         </div>
       </div>
     );
@@ -113,7 +113,7 @@ const InflationChart: React.FC<InflationChartProps> = ({ inflationSeries }) => {
 
   return (
     <div className="bg-white text-black p-2 rounded-lg icon-container mt-2">
-      <div className="text-md font-semibold">Inflation</div>
+      <div className="text-md font-semibold mb-2">GDP Growth</div>
       <div style={{ width: '100%', height: '120px' }}>
         <Line 
           data={chartData} 
@@ -160,7 +160,7 @@ const InflationChart: React.FC<InflationChartProps> = ({ inflationSeries }) => {
             elements: {
               point: {
                 hoverBackgroundColor: '#ffffff',
-                hoverBorderColor: '#3b82f6',
+                hoverBorderColor: '#6366f1',
                 hoverBorderWidth: 2,
               }
             }
@@ -171,4 +171,4 @@ const InflationChart: React.FC<InflationChartProps> = ({ inflationSeries }) => {
   );
 };
 
-export default InflationChart; 
+export default GdpGrowthChart; 

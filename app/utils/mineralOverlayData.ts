@@ -14,19 +14,20 @@ export const topNickelProducers = [
   { name: "United States", coords: [-110, 35], production: 18000 },
 ];
 
-// Top 10 manganese producers (2024, in tons)
-export const topManganeseProducers = [
-  { name: "South Africa", coords: [25, -29], production: 6200000 },
-  { name: "China", coords: [105, 35], production: 3000000 },
-  { name: "Australia", coords: [135, -25], production: 2900000 },
-  { name: "Gabon", coords: [11.7, -1], production: 1800000 },
-  { name: "Brazil", coords: [-55, -10], production: 1000000 },
-  { name: "India", coords: [78, 22], production: 950000 },
-  { name: "Malaysia", coords: [102, 4], production: 400000 },
-  { name: "Ukraine", coords: [32, 49], production: 390000 },
-  { name: "Kazakhstan", coords: [68, 48], production: 390000 },
-  { name: "Ghana", coords: [-1, 7.9], production: 390000 },
+// Top 10 uranium producers (2024, in tons)
+export const topUraniumProducers = [
+  { name: "Kazakhstan", coords: [68, 48], production: 21227 },
+  { name: "Canada", coords: [-95, 60], production: 7351 },
+  { name: "Namibia", coords: [18, -22], production: 5613 },
+  { name: "Australia", coords: [135, -25], production: 4553 },
+  { name: "Uzbekistan", coords: [64, 41], production: 3300 },
+  { name: "Russia", coords: [100, 60], production: 2508 },
+  { name: "Niger", coords: [8, 17], production: 2020 },
+  { name: "China", coords: [105, 35], production: 1700 },
+  { name: "India", coords: [78, 22], production: 600 },
+  { name: "South Africa", coords: [25, -29], production: 200 },
 ];
+
 
 // Top 10 lithium producers (2024, in tons)
 export const topLithiumProducers = [
@@ -42,19 +43,20 @@ export const topLithiumProducers = [
   { name: "Namibia", coords: [18, -22], production: 2700 },
 ];
 
-// Top 10 uranium producers (2024, in tons)
-export const topUraniumProducers = [
-  { name: "Kazakhstan", coords: [68, 48], production: 21227 },
-  { name: "Canada", coords: [-95, 60], production: 7351 },
-  { name: "Namibia", coords: [18, -22], production: 5613 },
-  { name: "Australia", coords: [135, -25], production: 4553 },
-  { name: "Uzbekistan", coords: [64, 41], production: 3300 },
-  { name: "Russia", coords: [100, 60], production: 2508 },
-  { name: "Niger", coords: [8, 17], production: 2020 },
-  { name: "China", coords: [105, 35], production: 1700 },
-  { name: "India", coords: [78, 22], production: 600 },
-  { name: "South Africa", coords: [25, -29], production: 200 },
+// Top 10 manganese producers (2024, in tons)
+export const topManganeseProducers = [
+  { name: "South Africa", coords: [25, -29], production: 6200000 },
+  { name: "China", coords: [105, 35], production: 3000000 },
+  { name: "Australia", coords: [135, -25], production: 2900000 },
+  { name: "Gabon", coords: [11.7, -1], production: 1800000 },
+  { name: "Brazil", coords: [-55, -10], production: 1000000 },
+  { name: "India", coords: [78, 22], production: 950000 },
+  { name: "Malaysia", coords: [102, 4], production: 400000 },
+  { name: "Ukraine", coords: [32, 49], production: 390000 },
+  { name: "Kazakhstan", coords: [68, 48], production: 390000 },
+  { name: "Ghana", coords: [-1, 7.9], production: 390000 },
 ];
+
 
 // Top 10 rare earths producers (2024, in tons)
 export const topREEProducers = [
