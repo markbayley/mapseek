@@ -105,8 +105,8 @@ const Dropdowns: React.FC<DropdownsProps> = ({
   ];
 
   return (
-    <div className=" flex  w-full justify-between">
-      <div className="space-x-5">
+    <div className=" flex w-full justify-between">
+      <div className="space-x-2">
         {! highlightedCountryId &&
         <select
           className="p-2 border rounded"
@@ -138,7 +138,7 @@ const Dropdowns: React.FC<DropdownsProps> = ({
         {/* Subfilter dropdown - only show when economy is selected and country is highlighted */}
         {gdpFilter == 0 && highlightedCountryId && (
           <select
-            className="p-2 border rounded w-32"
+            className="p-2 border rounded w-36"
             value={
               activeOverlays.exports ? 'exports' : 
               activeOverlays.imports ? 'imports' : 

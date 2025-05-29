@@ -444,7 +444,7 @@ export const mineSites: MineSite[] = [
   // Lithium (Additional Mines)
   {
     name: "Goulamina Mine",
-    coordinates: [4.6667, 11.0833],
+    coordinates: [-7.979150, 11.349153],
     resources: ["lithium"],
     ownership: "Ganfeng Lithium (50%), Firefinch Limited (50%)",
     location: "Bamako Region, Mali",
@@ -636,7 +636,7 @@ export const mineSites: MineSite[] = [
   },
   {
     name: "Lihir Mine",
-    coordinates: [147.3667, -7.3667],
+    coordinates: [152.638423, -3.125028],
     resources: ["gold"],
     ownership: "Newcrest",
     location: "Papua New Guinea",

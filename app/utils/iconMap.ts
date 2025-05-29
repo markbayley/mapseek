@@ -16,6 +16,7 @@ interface MapComponentProps {
 export const iconMap = {
     petroleum: { component: FaOilWell, name: "petroleum", color: "#334155" },
     crude: { component: MdOilBarrel, name: "crude", color: "#334155" },
+    condensate: { component: MdOilBarrel, name: "condensate", color: "#475569" },
     oil: { component: FaOilCan, name: "oil", color: "#eab308" },
     gas: { component: FaFire, name: "gas", color: "#52525b" },
     'natural gas': { component: FaFire, name: "natural gas", color: "#52525b" },
@@ -34,6 +35,8 @@ export const iconMap = {
     gold: { component: GiMetalBar, name: "gold", color: "#facc15" },
     silver: { component: GiMetalBar, name: "silver", color: "#d4d4d4" },
     platinum: { component: GiMetalBar, name: "platinum", color: "#d4d4d4" },
+    palladium: { component: GiMetalBar, name: "palladium", color: "#e5e7eb" },
+    molybdenum: { component: GiMetalBar, name: "molybdenum", color: "#9ca3af" },
     
     zinc: { component: TbHexagonLetterZ, name: "zinc", color: "#94A3B8" },
     metal: { component: GiGoldMine, name: "metal", color: "#6B7280" },

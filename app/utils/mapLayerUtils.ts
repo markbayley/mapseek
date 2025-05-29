@@ -3,7 +3,8 @@ import mapboxgl from "mapbox-gl";
 // Type definitions for layer configuration
 export interface LayerVisibilityConfig {
   gdpFilter: number;
-  activeTab: 'inflation' | 'unemployment' | 'gdp';
+  activeTab: 'inflation' | 'unemployment' | 'gdp' | 'gdpcapita' | 'laborforce' | 'publicdebt';
+  subFilter?: string;
 }
 
 // Layer definitions for different economic indicators
@@ -84,7 +85,7 @@ export const createPopulationLayer = (): mapboxgl.FillLayer => ({
       1000000000,
       "#7f1d1d",
     ],
-    "fill-opacity": 0.5,
+    "fill-opacity": 0.75,
   },
 });
 
@@ -109,7 +110,7 @@ export const createGdpLayer = (): mapboxgl.FillLayer => ({
       10000000,
       "#047857",
     ],
-    "fill-opacity": 0.5,
+    "fill-opacity": 0.75,
   },
 });
 
@@ -125,20 +126,20 @@ export const createInflationLayer = (): mapboxgl.FillLayer => ({
       "interpolate",
       ["linear"],
       ["coalesce", ["get", "INFLATION_RATE"], 0],
-      -10,
-      "#1e40af",      // Deep blue for deflation
-      0,
-      "#3b82f6",      // Blue for low inflation
-      5,
+      -5,
+      "#075985",      // Deep blue for deflation
+      -1,
+      "#0284c7",      // Blue for low inflation
+      2,
       "#fbbf24",      // Yellow for moderate inflation
-      10,
+      5,
       "#f59e0b",      // Orange for high inflation
       20,
       "#dc2626",      // Red for very high inflation
-      30,
+      100,
       "#7f1d1d",      // Dark red for extreme inflation
     ],
-    "fill-opacity": 0.5,
+    "fill-opacity": 0.75,
   },
 });
 
@@ -165,9 +166,96 @@ export const createUnemploymentLayer = (): mapboxgl.FillLayer => ({
       25,
       "#7f1d1d",      // Very dark red for extreme unemployment
     ],
-    "fill-opacity": 0.5,
+    "fill-opacity": 0.75,
   },
 });
+
+export const createLaborForceLayer = (): mapboxgl.FillLayer => {
+  console.log('Creating labor force layer');
+  return {
+    id: "laborforce-fill",
+    type: "fill",
+    source: "data",
+    layout: {
+      "visibility": "none"  // Start hidden, will be shown by visibility functions
+    },
+    paint: {
+      "fill-color": [
+        "interpolate",
+        ["linear"],
+        ["coalesce", ["get", "LABOR_FORCE"], 0],
+        0,
+        "#fef3c7",      // Light yellow for small labor force
+        10,
+        "#f59e0b",      // Orange for moderate labor force
+        100,
+        "#dc2626",      // Red for large labor force
+        500,
+        "#991b1b",      // Dark red for very large labor force
+        1000,
+        "#7f1d1d",      // Very dark red for massive labor force
+      ],
+      "fill-opacity": 0.75,
+    },
+  };
+};
+
+export const createPublicDebtLayer = (): mapboxgl.FillLayer => ({
+  id: "publicdebt-fill",
+  type: "fill",
+  source: "data",
+  layout: {
+    "visibility": "none"  // Start hidden, will be shown by visibility functions
+  },
+  paint: {
+    "fill-color": [
+      "interpolate",
+      ["linear"],
+      ["coalesce", ["get", "PUBLIC_DEBT"], 0],
+      0,
+      "#10b981",      // Green for low debt
+      30,
+      "#fbbf24",      // Yellow for moderate debt
+      60,
+      "#f59e0b",      // Orange for high debt
+      90,
+      "#dc2626",      // Red for very high debt
+      150,
+      "#7f1d1d",      // Dark red for extreme debt
+    ],
+    "fill-opacity": 0.75,
+  },
+});
+
+export const createRealGdpPerCapitaLayer = (): mapboxgl.FillLayer => {
+  console.log('Creating real GDP per capita layer');
+  return {
+    id: "realgdpcapita-fill",
+    type: "fill",
+    source: "data",
+    layout: {
+      "visibility": "none"  // Start hidden, will be shown by visibility functions
+    },
+    paint: {
+      "fill-color": [
+        "interpolate",
+        ["linear"],
+        ["coalesce", ["get", "REAL_GDP_PER_CAPITA"], 0],
+        0,
+        "#fef3c7",      // Light yellow for low GDP per capita
+        10,
+        "#10b981",      // Green for moderate GDP per capita
+        30,
+        "#3b82f6",      // Blue for high GDP per capita
+        60,
+        "#6366f1",      // Indigo for very high GDP per capita
+        100,
+        "#8b5cf6",      // Purple for extremely high GDP per capita
+      ],
+      "fill-opacity": 0.85,
+    },
+  };
+};
 
 export const createCountryFillsLayer = (): mapboxgl.FillLayer => ({
   id: "country-fills",
@@ -216,6 +304,9 @@ export const addAllDataLayers = (map: mapboxgl.Map): void => {
     { name: 'inflation', layer: createInflationLayer() },
     { name: 'unemployment', layer: createUnemploymentLayer() },
     { name: 'gdpCapita', layer: createGdpCapitaLayer() },
+    { name: 'laborForce', layer: createLaborForceLayer() },
+    { name: 'publicDebt', layer: createPublicDebtLayer() },
+    { name: 'realGdpCapita', layer: createRealGdpPerCapitaLayer() },
     { name: 'countryFills', layer: createCountryFillsLayer() }
   ];
 
@@ -262,6 +353,23 @@ export const updateLayerVisibility = (
     map.removeLayer("import-fill");
   }
 
+  // Hide economic layers if not on Overview subfilter
+  if (config.subFilter && config.subFilter !== 'Overview') {
+    const economicLayers = ["gdp-fill", "inflation-fill", "unemployment-fill", "gdpcapita-fill", "population-fill", "laborforce-fill", "publicdebt-fill", "realgdpcapita-fill"];
+    economicLayers.forEach((layer) => {
+      if (map.getLayer(layer)) {
+        map.setLayoutProperty(layer, "visibility", "none");
+      }
+    });
+    // Hide all legends when not on Overview
+    const legendIds = ["gdp-legend", "population-legend", "gdp-capita-legend", "inflation-legend", "unemployment-legend", "laborforce-legend", "publicdebt-legend", "realgdpcapita-legend"];
+    legendIds.forEach(id => {
+      const legend = document.getElementById(id);
+      if (legend) legend.style.display = "none";
+    });
+    return; // Exit early, don't show any economic layers
+  }
+
   switch (config.gdpFilter) {
     case 0:
       // Show economic layers based on activeTab when in Overview mode
@@ -269,7 +377,7 @@ export const updateLayerVisibility = (
       break;
     case 1000000000000:
       // Hide all economic layers first, then show population
-      const economicLayers = ["gdp-fill", "inflation-fill", "unemployment-fill", "gdpcapita-fill"];
+      const economicLayers = ["gdp-fill", "inflation-fill", "unemployment-fill", "gdpcapita-fill", "laborforce-fill", "publicdebt-fill", "realgdpcapita-fill"];
       economicLayers.forEach((layer) => {
         if (map.getLayer(layer)) {
           map.setLayoutProperty(layer, "visibility", "none");
@@ -282,7 +390,7 @@ export const updateLayerVisibility = (
       break;
     case 3000000000000:
       // Hide all economic layers first, then show gdp capita
-      const economicLayers2 = ["gdp-fill", "inflation-fill", "unemployment-fill", "population-fill"];
+      const economicLayers2 = ["gdp-fill", "inflation-fill", "unemployment-fill", "population-fill", "laborforce-fill", "publicdebt-fill", "realgdpcapita-fill"];
       economicLayers2.forEach((layer) => {
         if (map.getLayer(layer)) {
           map.setLayoutProperty(layer, "visibility", "none");
@@ -301,12 +409,14 @@ export const updateLayerVisibility = (
 // Function to handle economic layer visibility based on activeTab
 export const updateEconomicLayerVisibility = (
   map: mapboxgl.Map,
-  activeTab: 'inflation' | 'unemployment' | 'gdp'
+  activeTab: 'inflation' | 'unemployment' | 'gdp' | 'gdpcapita' | 'laborforce' | 'publicdebt'
 ): void => {
   if (!map.isStyleLoaded()) return;
 
+  console.log('updateEconomicLayerVisibility called with activeTab:', activeTab);
+
   // Hide all economic layers first
-  const economicLayers = ["gdp-fill", "inflation-fill", "unemployment-fill", "gdpcapita-fill", "population-fill"];
+  const economicLayers = ["gdp-fill", "inflation-fill", "unemployment-fill", "gdpcapita-fill", "population-fill", "laborforce-fill", "publicdebt-fill", "realgdpcapita-fill"];
   economicLayers.forEach((layer) => {
     if (map.getLayer(layer)) {
       map.setLayoutProperty(layer, "visibility", "none");
@@ -317,20 +427,50 @@ export const updateEconomicLayerVisibility = (
   switch (activeTab) {
     case 'gdp':
       if (map.getLayer("gdp-fill")) {
+        console.log('Showing GDP layer');
         showLegend("gdp");
         map.setLayoutProperty("gdp-fill", "visibility", "visible");
       }
       break;
+    case 'gdpcapita':
+      if (map.getLayer("realgdpcapita-fill")) {
+        console.log('Showing Real GDP Per Capita layer');
+        showLegend("realgdpcapita");
+        map.setLayoutProperty("realgdpcapita-fill", "visibility", "visible");
+      } else {
+        console.log('Real GDP Per Capita layer not found');
+      }
+      break;
     case 'inflation':
       if (map.getLayer("inflation-fill")) {
+        console.log('Showing Inflation layer');
         showLegend("inflation");
         map.setLayoutProperty("inflation-fill", "visibility", "visible");
       }
       break;
     case 'unemployment':
       if (map.getLayer("unemployment-fill")) {
+        console.log('Showing Unemployment layer');
         showLegend("unemployment");
         map.setLayoutProperty("unemployment-fill", "visibility", "visible");
+      }
+      break;
+    case 'laborforce':
+      if (map.getLayer("laborforce-fill")) {
+        console.log('Showing Labor Force layer');
+        showLegend("laborforce");
+        map.setLayoutProperty("laborforce-fill", "visibility", "visible");
+      } else {
+        console.log('Labor Force layer not found');
+      }
+      break;
+    case 'publicdebt':
+      if (map.getLayer("publicdebt-fill")) {
+        console.log('Showing Public Debt layer');
+        showLegend("publicdebt");
+        map.setLayoutProperty("publicdebt-fill", "visibility", "visible");
+      } else {
+        console.log('Public Debt layer not found');
       }
       break;
   }
@@ -339,7 +479,7 @@ export const updateEconomicLayerVisibility = (
 // Function to show/hide legends
 export const showLegend = (layer: string): void => {
   // Hide all legends first
-  const legendIds = ["gdp-legend", "population-legend", "gdp-capita-legend", "inflation-legend", "unemployment-legend"];
+  const legendIds = ["gdp-legend", "population-legend", "gdp-capita-legend", "inflation-legend", "unemployment-legend", "laborforce-legend", "publicdebt-legend", "realgdpcapita-legend"];
   legendIds.forEach(id => {
     const legend = document.getElementById(id);
     if (legend) legend.style.display = "none";
@@ -351,7 +491,10 @@ export const showLegend = (layer: string): void => {
     "population": "population-legend",
     "gdp-capita": "gdp-capita-legend",
     "inflation": "inflation-legend",
-    "unemployment": "unemployment-legend"
+    "unemployment": "unemployment-legend",
+    "laborforce": "laborforce-legend",
+    "publicdebt": "publicdebt-legend",
+    "realgdpcapita": "realgdpcapita-legend"
   };
 
   const legendId = legendMap[layer];
@@ -368,4 +511,7 @@ export const addLegendClickEvents = (map: mapboxgl.Map): void => {
   map.on("click", "gdpcapita-fill", () => showLegend("gdp-capita"));
   map.on("click", "inflation-fill", () => showLegend("inflation"));
   map.on("click", "unemployment-fill", () => showLegend("unemployment"));
+  map.on("click", "laborforce-fill", () => showLegend("laborforce"));
+  map.on("click", "publicdebt-fill", () => showLegend("publicdebt"));
+  map.on("click", "realgdpcapita-fill", () => showLegend("realgdpcapita"));
 }; 

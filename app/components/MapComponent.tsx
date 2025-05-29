@@ -70,6 +70,9 @@ import { createCountryNameMapping } from '../utils/countryNameMappingUtils';
 import {
   loadInflationData,
   loadUnemploymentData,
+  loadLaborForceData,
+  loadPublicDebtData,
+  loadRealGdpPerCapitaData,
   addEconomicDataToFeatures,
   type EconomicData
 } from '../utils/economicDataUtils';
@@ -141,6 +144,15 @@ export default function Map({ }: MapComponentProps) {
   const currentAnimationContext = useRef<string>(''); // Track the current animation context (country+filter)
   const animationFrameIds = useRef<number[]>([]); // Track animation frame IDs for cancellation
   const [mapReady, setMapReady] = useState(false);
+  
+  // Add state for mine data
+  const [selectedMine, setSelectedMine] = useState<{
+    name: string;
+    location: string;
+    details: string;
+    ownership: string;
+    resources: string[];
+  } | null>(null);
 
   // Create animation context object for the utilities
   const animationContext: AnimationContext = {
@@ -150,11 +162,14 @@ export default function Map({ }: MapComponentProps) {
   };
 
   // Add state for active tab to control which economic layer is shown
-  const [activeTab, setActiveTab] = useState<'inflation' | 'unemployment' | 'gdp'>('inflation');
+  const [activeTab, setActiveTab] = useState<'inflation' | 'unemployment' | 'gdp' | 'gdpcapita' | 'laborforce' | 'publicdebt' | 'population' | 'fertility' | 'medianage' >('inflation');
 
   // Add state for inflation and unemployment data
   const [inflationData, setInflationData] = useState<EconomicData>({});
   const [unemploymentData, setUnemploymentData] = useState<EconomicData>({});
+  const [laborForceData, setLaborForceData] = useState<EconomicData>({});
+  const [publicDebtData, setPublicDebtData] = useState<EconomicData>({});
+  const [realGdpPerCapitaData, setRealGdpPerCapitaData] = useState<EconomicData>({});
 
 
 
@@ -203,6 +218,13 @@ export default function Map({ }: MapComponentProps) {
   useEffect(() => {
     const handleClick = (e: mapboxgl.MapLayerMouseEvent) => {
       if (!e.features || e.features.length === 0) return;
+
+      // Check if we're on Resources subfilter - if so, don't highlight countries
+      const currentSubFilter = Object.keys(activeOverlays).find(key => activeOverlays[key]) || "Overview";
+      if (currentSubFilter === 'Resources') {
+        console.log("Resources subfilter active - skipping country highlighting");
+        return; // Exit early, don't highlight countries on Resources subfilter
+      }
 
       // Cancel all animation frames first
       cancelAllAnimationFrames(animationFrameIds);
@@ -333,7 +355,7 @@ export default function Map({ }: MapComponentProps) {
     return () => {
       map.current?.off("click", "country-fills", handleClick);
     };
-  }, [highlightedCountryId]); // Add highlightedCountryId as dependency
+  }, [highlightedCountryId, activeOverlays]); // Add activeOverlays as dependency
 
   const setupClickEvents = async () => {
     if (!map.current) return;
@@ -840,10 +862,33 @@ export default function Map({ }: MapComponentProps) {
       // Load economic data
       const inflationDataLoaded = await loadInflationData();
       const unemploymentDataLoaded = await loadUnemploymentData();
+      const laborForceDataLoaded = await loadLaborForceData();
+      const publicDebtDataLoaded = await loadPublicDebtData();
+      const realGdpPerCapitaDataLoaded = await loadRealGdpPerCapitaData();
 
       // Store the data in state
       setInflationData(inflationDataLoaded);
       setUnemploymentData(unemploymentDataLoaded);
+      setLaborForceData(laborForceDataLoaded);
+      setPublicDebtData(publicDebtDataLoaded);
+      setRealGdpPerCapitaData(realGdpPerCapitaDataLoaded);
+
+      console.log('All economic data loaded:');
+      console.log('- Inflation:', Object.keys(inflationDataLoaded).length, 'countries');
+      console.log('- Unemployment:', Object.keys(unemploymentDataLoaded).length, 'countries');
+      console.log('- Labor Force:', Object.keys(laborForceDataLoaded).length, 'countries');
+      console.log('- Public Debt:', Object.keys(publicDebtDataLoaded).length, 'countries');
+      console.log('- Real GDP Per Capita:', Object.keys(realGdpPerCapitaDataLoaded).length, 'countries');
+
+      // Add economic data to features
+      addEconomicDataToFeatures(
+        countriesGeoJSON.features,
+        inflationDataLoaded,
+        unemploymentDataLoaded,
+        laborForceDataLoaded,
+        publicDebtDataLoaded,
+        realGdpPerCapitaDataLoaded
+      );
 
       // Store only the features array in the ref for coordinate lookup
       setCountriesFeatures(countriesGeoJSON.features);
@@ -851,9 +896,6 @@ export default function Map({ }: MapComponentProps) {
 
       // Set data ready state to true after data is loaded and state is set
       setIsCountriesDataReady(true);
-
-      // Add economic data to GeoJSON features using utility function
-      addEconomicDataToFeatures(countriesGeoJSON.features, inflationDataLoaded, unemploymentDataLoaded);
 
       if (map.current && map.current.isStyleLoaded()) {
         map.current.addSource("data", {
@@ -880,7 +922,8 @@ export default function Map({ }: MapComponentProps) {
         // Wait a bit for layers to be fully added before updating visibility
         setTimeout(() => {
           if (map.current) {
-            updateLayerVisibility(map.current, { gdpFilter, activeTab });
+            const currentSubFilter = Object.keys(activeOverlays).find(key => activeOverlays[key]) || "Overview";
+            updateLayerVisibility(map.current, { gdpFilter, activeTab, subFilter: currentSubFilter });
           }
         }, 200);
       } else {
@@ -898,12 +941,13 @@ export default function Map({ }: MapComponentProps) {
   useEffect(() => {
     const timeout = setTimeout(() => {
       if (map.current) {
-        updateLayerVisibility(map.current, { gdpFilter, activeTab });
+        const currentSubFilter = Object.keys(activeOverlays).find(key => activeOverlays[key]) || "Overview";
+        updateLayerVisibility(map.current, { gdpFilter, activeTab, subFilter: currentSubFilter });
       }
     }, 1000);
 
     return () => clearTimeout(timeout);
-  }, [gdpFilter, activeTab]);
+  }, [gdpFilter, activeTab, activeOverlays]);
 
   // Add useEffect to control mine sites visibility based on Resources overlay
   useEffect(() => {
@@ -919,6 +963,54 @@ export default function Map({ }: MapComponentProps) {
     });
   }, [activeOverlays.Resources]);
 
+  // Add useEffect to unhighlight countries when switching to Resources subfilter
+  useEffect(() => {
+    const currentSubFilter = Object.keys(activeOverlays).find(key => activeOverlays[key]) || "Overview";
+    
+    // If switching to Resources subfilter and a country is currently highlighted, unhighlight it
+    if (currentSubFilter === 'Resources' && highlightedCountryId && map.current) {
+      console.log("Switching to Resources subfilter - unhighlighting country");
+      
+      // Reset the animation context
+      currentAnimationContext.current = '';
+
+      // Remove highlight layers
+      if (map.current.getLayer("export-fill")) {
+        map.current.removeLayer("export-fill");
+      }
+      if (map.current.getLayer("import-fill")) {
+        map.current.removeLayer("import-fill");
+      }
+
+      // Clean up animations
+      cleanupAllAnimations(map, animationContext);
+
+      // Remove country highlighting
+      map.current.setFeatureState(
+        {
+          source: "countries",
+          sourceLayer: "country_boundaries",
+          id: highlightedCountryId,
+        } as any,
+        { click: false }
+      );
+
+      // Reset state but keep panel open for mine information
+      setHighlightedCountryId(null);
+      setSelectedCountryCenter(null);
+      setExportIcons([]);
+      setImportIcons([]);
+      
+      // Return to default view
+      map.current.flyTo({
+        zoom: 2,
+        essential: true,
+      });
+      
+      setSpinEnabled(true);
+    }
+  }, [activeOverlays, highlightedCountryId]);
+
   useEffect(() => {
     setCountryOption(click);
   }, [countryOption]);
@@ -926,9 +1018,21 @@ export default function Map({ }: MapComponentProps) {
   // Add useEffect to respond to activeTab changes
   useEffect(() => {
     if (gdpFilter === 0 && map.current) { // Only update when in Overview mode
-      updateEconomicLayerVisibility(map.current, activeTab);
+      const currentSubFilter = Object.keys(activeOverlays).find(key => activeOverlays[key]) || "Overview";
+      // Only show economic layers if we're on Overview subfilter
+      if (currentSubFilter === 'Overview') {
+        updateEconomicLayerVisibility(map.current, activeTab);
+      } else {
+        // Hide all economic layers if not on Overview
+        const economicLayers = ["gdp-fill", "inflation-fill", "unemployment-fill", "gdpcapita-fill", "population-fill"];
+        economicLayers.forEach((layer) => {
+          if (map.current?.getLayer(layer)) {
+            map.current.setLayoutProperty(layer, "visibility", "none");
+          }
+        });
+      }
     }
-  }, [activeTab, gdpFilter]); // Add gdpFilter to dependencies
+  }, [activeTab, gdpFilter, activeOverlays]); // Add activeOverlays to dependencies
 
   // Add useEffect to handle updating visualization when a country is selected
   useEffect(() => {
@@ -1037,7 +1141,8 @@ export default function Map({ }: MapComponentProps) {
     else if (selectedValue === "default") {
       // Layers are already removed at the start of the function
       if (map.current) {
-        updateLayerVisibility(map.current, { gdpFilter, activeTab });
+        const currentSubFilter = Object.keys(activeOverlays).find(key => activeOverlays[key]) || "Overview";
+        updateLayerVisibility(map.current, { gdpFilter, activeTab, subFilter: currentSubFilter });
       }
     }
 
@@ -1580,38 +1685,38 @@ export default function Map({ }: MapComponentProps) {
   }, [selectedCountryCenter, activeOverlays, isCountriesDataReady, exportPartners, importPartners, animationPaused, exportIcons, importIcons, highlightedCountryId]); // Add highlightedCountryId as dependency
 
   // Use the custom hook for mineral overlays (move this call here, after all dependencies are defined)
-  useMineralOverlay({
-    map,
-    gdpFilter,
-    activeOverlays,
-    addReactIconsToMapbox,
-    topCopperProducers,
-    topNickelProducers,
-    topManganeseProducers,
-    topLithiumProducers,
-    topUraniumProducers,
-    topREEProducers,
-    topCoalProducers,
-    topGasProducers,
-    topPetroleumProducers,
-    topCobaltProducers,
-    topDiamondProducers,
-    topGoldProducers,
-    topAluminiumProducers,
-    topIronOreProducers,
-    topSilverProducers,
-    iconMap,
-    formatProduction,
-    formatCoal,
-    formatGas,
-    formatPetroleum,
-    formatCobalt,
-    formatDiamond,
-    formatGold,
-    formatAluminium,
-    formatIronOre,
-    formatSilver,
-  });
+  // useMineralOverlay({
+  //   map,
+  //   gdpFilter,
+  //   activeOverlays,
+  //   addReactIconsToMapbox,
+  //   topCopperProducers,
+  //   topNickelProducers,
+  //   topManganeseProducers,
+  //   topLithiumProducers,
+  //   topUraniumProducers,
+  //   topREEProducers,
+  //   topCoalProducers,
+  //   topGasProducers,
+  //   topPetroleumProducers,
+  //   topCobaltProducers,
+  //   topDiamondProducers,
+  //   topGoldProducers,
+  //   topAluminiumProducers,
+  //   topIronOreProducers,
+  //   topSilverProducers,
+  //   iconMap,
+  //   formatProduction,
+  //   formatCoal,
+  //   formatGas,
+  //   formatPetroleum,
+  //   formatCobalt,
+  //   formatDiamond,
+  //   formatGold,
+  //   formatAluminium,
+  //   formatIronOre,
+  //   formatSilver,
+  // });
 
   // Mine site coordinates and names are now imported from ../data/mineSites.ts
 
@@ -1639,7 +1744,7 @@ export default function Map({ }: MapComponentProps) {
       let clickHandlersAdded = false; // Flag to prevent repeated event listeners
 
       // Move addMineLayer definition here, before addDotImageAndLayer
-      function addMineLayer() {
+      async function addMineLayer() {
         if (!map.current || mineLayersAdded) {
           return;
         }
@@ -1662,35 +1767,40 @@ export default function Map({ }: MapComponentProps) {
           site.resources.forEach((resource, idx) => {
             // Use iconMap to get the icon name
             const iconKey = Object.keys(iconMap).find(k => k.toLowerCase() === resource.toLowerCase());
+            let iconName = 'minerals'; // Default fallback icon
+            
             if (iconKey && (iconMap as any)[iconKey]) {
-              const iconName = (iconMap as any)[iconKey].name;
-              resourceIconNames.add(iconName);
-
-              // Calculate horizontal offset for this resource (spread them out horizontally)
-              const offsetX = (idx - (site.resources.length - 1) / 2) * 2 - 0.5; // Slightly left of dot
-              const offsetY = 0.5; // Below the dot icon
-
-              // Calculate descending icon size - first icon largest, then progressively smaller
-              const baseSize = 1.2; // Starting size for first icon
-              const sizeDecrement = 0.7; // How much smaller each subsequent icon gets
-              const minSize = 0.7; // Minimum size to prevent icons from becoming too small
-              const iconSize = Math.max(baseSize - (idx * sizeDecrement), minSize);
-
-              resourceFeatures.push({
-                type: 'Feature',
-                geometry: {
-                  type: 'Point',
-                  coordinates: [site.coordinates[0] + offsetX, site.coordinates[1] + offsetY]
-                },
-                properties: {
-                  resource: resource,
-                  icon: iconName,
-                  offset: [offsetX, offsetY],
-                  mine: site.name,
-                  iconSize: iconSize // Add size property to each feature
-                }
-              });
+              iconName = (iconMap as any)[iconKey].name;
+            } else {
+              console.warn(`No icon found for resource: ${resource}, using fallback icon: ${iconName}`);
             }
+            
+            resourceIconNames.add(iconName);
+
+            // Calculate horizontal offset for this resource (spread them out horizontally)
+            const offsetX = (idx - (site.resources.length - 1) / 2) * 2 - 0.5; // Slightly left of dot
+            const offsetY = 0.5; // Below the dot icon
+
+            // Calculate descending icon size - first icon largest, then progressively smaller
+            const baseSize = 1; // Starting size for first icon
+            const sizeDecrement = 0.7; // How much smaller each subsequent icon gets
+            const minSize = 0.7; // Minimum size to prevent icons from becoming too small
+            const iconSize = Math.max(baseSize - (idx * sizeDecrement), minSize);
+
+            resourceFeatures.push({
+              type: 'Feature',
+              geometry: {
+                type: 'Point',
+                coordinates: [site.coordinates[0] + offsetX, site.coordinates[1] + offsetY]
+              },
+              properties: {
+                resource: resource,
+                icon: iconName,
+                offset: [offsetX, offsetY],
+                mine: site.name,
+                iconSize: iconSize // Add size property to each feature
+              }
+            });
           });
         });
 
@@ -1708,8 +1818,17 @@ export default function Map({ }: MapComponentProps) {
           iconsToAdd.push({ component: dotIcon.component as IconType, name: dotIcon.name, color: dotIcon.color });
         }
 
+        // Ensure the fallback minerals icon is always included
+        const mineralsIcon = iconMap.minerals;
+        if (mineralsIcon && !iconsToAdd.find(icon => icon.name === 'minerals')) {
+          iconsToAdd.push({ component: mineralsIcon.component as IconType, name: mineralsIcon.name, color: mineralsIcon.color });
+        }
+
         if (iconsToAdd.length > 0) {
           addReactIconsToMapbox(map.current, iconsToAdd);
+          
+          // Wait a bit for icons to be loaded before adding layers
+          await new Promise(resolve => setTimeout(resolve, 100));
         }
 
         // Add resource features as a new GeoJSON source
@@ -1726,9 +1845,14 @@ export default function Map({ }: MapComponentProps) {
             id: 'mine-dots',
             type: 'symbol',
             source: 'mine-sites',
-            minzoom: 3, // Only show at zoom >= 3
+            minzoom: 2, // Only show at zoom >= 3
             layout: {
-              'icon-image': 'dot',
+              'icon-image': [
+                'case',
+                ['has', 'name'], // Only show icon if feature has a name property
+                'dot',
+                '' // Empty string for fallback
+              ],
               'icon-size': 1.2,
               'icon-allow-overlap': true,
               'icon-ignore-placement': true,
@@ -1746,10 +1870,20 @@ export default function Map({ }: MapComponentProps) {
             id: 'mine-resources',
             type: 'symbol',
             source: 'mine-resources',
-            minzoom: 3, // Only show at zoom >= 3
+            minzoom: 2, // Only show at zoom >= 3
             layout: {
-              'icon-image': ['get', 'icon'],
-              'icon-size': ['get', 'iconSize'], // Use the calculated size from feature properties
+              'icon-image': [
+                'case',
+                ['has', 'icon'], // Only show icon if feature has an icon property
+                ['get', 'icon'],
+                'minerals' // Fallback to minerals icon
+              ],
+              'icon-size': [
+                'case',
+                ['has', 'iconSize'], // Only use iconSize if it exists
+                ['get', 'iconSize'],
+                0.8 // Fallback size
+              ],
               'icon-allow-overlap': true,
               'icon-ignore-placement': true,
               'visibility': activeOverlays.Resources ? 'visible' : 'none', // Set initial visibility
@@ -1773,7 +1907,7 @@ export default function Map({ }: MapComponentProps) {
               'visibility': activeOverlays.Resources ? 'visible' : 'none', // Set initial visibility
             },
             paint: {
-              'text-color': '#111111',
+              'text-color': '#ffffff',
               'text-halo-width': 0,
             },
           });
@@ -1822,92 +1956,61 @@ export default function Map({ }: MapComponentProps) {
 
           let currentPopup: mapboxgl.Popup | null = null;
 
-          // Function to create and show popup
-          const showPopup = (e: mapboxgl.MapLayerMouseEvent) => {
+          // Function to handle mine click - show in info panel instead of popup
+          const handleMineClick = (e: mapboxgl.MapLayerMouseEvent) => {
             if (!e.features || !e.features.length) return;
 
             // Prevent map interactions when clicking on mine areas
             e.preventDefault();
 
             const feature = e.features[0];
-            const coordinates = (feature.geometry.type === 'Point' && Array.isArray(feature.geometry.coordinates) && feature.geometry.coordinates.length === 2)
-              ? feature.geometry.coordinates as [number, number]
-              : [0, 0];
             const props = feature.properties as { name?: string; location?: string; details?: string; ownership?: string };
             const name = props?.name || '';
             const location = props?.location || '';
             const details = props?.details || '';
             const ownership = props?.ownership || '';
 
-            // Close existing popup
-            if (currentPopup) {
-              currentPopup.remove();
+            // Find the mine data to get resources and coordinates
+            const mineData = mineSites.find(site => site.name === name);
+            const resources = mineData?.resources || [];
+            const coordinates = mineData?.coordinates;
+
+            // Set mine data in state to display in info panel
+            setSelectedMine({
+              name,
+              location,
+              details,
+              ownership,
+              resources
+            });
+
+            // Zoom in to the mine location with zoom level 10
+            if (coordinates && map.current) {
+              map.current.flyTo({
+                center: coordinates,
+                zoom: 13,
+                essential: true,
+                duration: 1500 // Smooth animation duration in milliseconds
+              });
             }
 
-            // Create popup content with hover-friendly styling
-            const popupContent = `
-            <div id="mine-popup" style="
-              background: white;
-              padding: 16px;
-              border-radius: 12px;
-              min-width: 280px;
-              max-width: 350px;
-              box-shadow: 0 8px 32px rgba(0,0,0,0.2);
-              border: 1px solid #e5e7eb;
-              font-family: system-ui, -apple-system, sans-serif;
-              cursor: default;
-            ">
-              <div style="font-weight: bold; font-size: 1.2em; margin-bottom: 8px; color: #1f2937;">${name}</div>
-              <div style="color: #6b7280; font-size: 0.95em; margin-bottom: 8px; font-weight: 500;">${location}</div>
-              ${ownership ? `<div style="color: #374151; font-size: 0.9em; margin-bottom: 8px;"><strong>Owner:</strong> ${ownership}</div>` : ''}
-              <div style="color: #374151; font-size: 0.95em; line-height: 1.4;">${details}</div>
-              <div style="
-                margin-top: 12px; 
-                padding-top: 8px; 
-                border-top: 1px solid #f3f4f6; 
-                font-size: 0.8em; 
-                color: #9ca3af;
-                text-align: center;
-              ">Click anywhere outside to close</div>
-            </div>
-          `;
+            // Open the info panel
+            setPanelOpen(true);
 
-            currentPopup = new mapboxgl.Popup({
-              closeOnClick: false, // Don't auto-close on map click
-              closeButton: true,   // Show close button
-              maxWidth: '400px',
-              className: 'mine-popup'
-            })
-              .setLngLat(coordinates as [number, number])
-              .setHTML(popupContent)
-              .addTo(map.current!);
-
-            // Make popup hoverable - prevent it from closing when mouse is over it
-            const popupElement = currentPopup.getElement();
-            if (popupElement) {
-              popupElement.addEventListener('mouseenter', () => {
-                // Keep popup open when hovering over it
-              });
-
-              popupElement.addEventListener('mouseleave', () => {
-                // Optional: auto-close after a delay when mouse leaves popup
-                setTimeout(() => {
-                  if (currentPopup && !popupElement.matches(':hover')) {
-                    currentPopup.remove();
-                    currentPopup = null;
-                  }
-                }, 1000); // 1 second delay
-              });
+            // Close any existing popup
+            if (currentPopup) {
+              currentPopup.remove();
+              currentPopup = null;
             }
           };
 
           // Add click handlers for both the dot icons and larger clickable areas
-          map.current.on('click', 'mine-dots', showPopup);
-          map.current.on('click', 'mine-clickable-circles', showPopup);
+          map.current.on('click', 'mine-dots', handleMineClick);
+          map.current.on('click', 'mine-clickable-circles', handleMineClick);
 
-          // Add hover functionality - show popup on hover
-          map.current.on('mouseenter', 'mine-clickable-circles', showPopup);
-          map.current.on('mouseenter', 'mine-dots', showPopup);
+          // Remove hover functionality since we're using info panel instead of popup
+          // map.current.on('mouseenter', 'mine-clickable-circles', handleMineClick);
+          // map.current.on('mouseenter', 'mine-dots', handleMineClick);
 
           // Add hover effects for better UX
           map.current.on('mouseenter', 'mine-clickable-circles', () => {
@@ -1922,43 +2025,8 @@ export default function Map({ }: MapComponentProps) {
             }
           });
 
-          // Hide popup when mouse leaves the clickable area (with delay)
-          map.current.on('mouseleave', 'mine-clickable-circles', () => {
-            setTimeout(() => {
-              if (currentPopup) {
-                const popupElement = currentPopup.getElement();
-                if (popupElement && !popupElement.matches(':hover')) {
-                  currentPopup.remove();
-                  currentPopup = null;
-                }
-              }
-            }, 200); // Short delay to allow moving to popup
-          });
-
-          map.current.on('mouseleave', 'mine-dots', () => {
-            setTimeout(() => {
-              if (currentPopup) {
-                const popupElement = currentPopup.getElement();
-                if (popupElement && !popupElement.matches(':hover')) {
-                  currentPopup.remove();
-                  currentPopup = null;
-                }
-              }
-            }, 200); // Short delay to allow moving to popup
-          });
-
-          // Close popup when clicking elsewhere on the map
-          map.current.on('click', (e) => {
-            const features = map.current?.queryRenderedFeatures(e.point, {
-              layers: ['mine-dots', 'mine-clickable-circles']
-            });
-            if (!features || !features.length) {
-              if (currentPopup) {
-                currentPopup.remove();
-                currentPopup = null;
-              }
-            }
-          });
+          // Remove popup-related event handlers since we're using info panel
+          // (keeping hover effects for cursor changes only)
 
           clickHandlersAdded = true;
         }
@@ -1967,17 +2035,17 @@ export default function Map({ }: MapComponentProps) {
       }
 
       // Now define addDotImageAndLayer, which can call addMineLayer
-      function addDotImageAndLayer() {
+      async function addDotImageAndLayer() {
         if (!map.current) return;
         // The dot icon is already added via addReactIconsToMapbox in addMineLayer
-        addMineLayer();
+        await addMineLayer();
       }
 
       // Add on style load only once
       const mapInstance = map.current;
-      function handleStyleData() {
+      async function handleStyleData() {
         if (!mineLayersAdded && map.current && map.current.isStyleLoaded()) {
-          addDotImageAndLayer();
+          await addDotImageAndLayer();
         }
       }
 
@@ -2065,6 +2133,8 @@ export default function Map({ }: MapComponentProps) {
           infoPanelIconElements={infoPanelIconElementsState}
           activeTab={activeTab}
           setActiveTab={setActiveTab}
+          selectedMine={selectedMine}
+          onClearMine={() => setSelectedMine(null)}
         />
       )}
       {/* Show Legend only if Resources or Overview is active and no country is selected */}
